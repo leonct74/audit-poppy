@@ -38,12 +38,17 @@ AuditPoppy does the AWS half of that job **inside the customer's own account**:
 1. **No vendor in the evidence path.** Findings, evidence snapshots and reports live in the
    customer's own S3/DynamoDB. Olly Digital never sees a security posture, a resource name,
    or a finding. The pitch in one line: *compliance evidence that never leaves your cloud.*
-2. **AWS does the heavy lifting.** AWS already ships the machinery Vanta resells a view of:
-   **AWS Config** (resource recording + managed rules), **Security Hub** (CIS / AWS
-   Foundational Security Best Practices checks), **AWS Audit Manager** (a prebuilt SOC 2
-   framework with automatic evidence collection). AuditPoppy turns them on, scopes them,
-   translates their output into auditor language, and packages the result. It is mostly
-   orchestration + rendering — the same shape as MailPoppy's GuardDuty integration, scaled up.
+2. **AWS does the heavy lifting — Config + Security Hub.** AWS ships the check engines
+   Vanta resells a view of: **AWS Config** (resource recording + managed rules) and
+   **Security Hub** (CIS / AWS Foundational Security Best Practices checks). AuditPoppy
+   turns them on, translates their output into auditor language, and packages the result —
+   mostly orchestration + rendering, the same shape as MailPoppy's GuardDuty integration,
+   scaled up. ⚠️ **AWS Audit Manager is OUT** — phase 0 (2026-09-02) found it in
+   **maintenance mode since 2026-04-30**: it cannot be enabled for new accounts, which is
+   every AuditPoppy customer by definition. Evidence collection is therefore the poppy's
+   own (§2.2), and the SOC 2 mapping is fully repo-owned (§5) — which also means the
+   product is not hostage to a deprecated AWS service, and the per-assessment Audit
+   Manager cost disappears.
 3. **A fraction of the price.** The AWS services bill single-digit to low-tens of $/month in
    the customer's own account (printed before consent — §7); the poppy's subscription is
    ~95% below the incumbents (§8). Price is credibility in this market: it is priced as a
@@ -67,11 +72,12 @@ checked by the same platform.
    Trust Services Criteria** (CC6 access, CC7 operations, CC8 change management, …): each
    failing control with the affected resources, why an auditor cares, and the concrete AWS
    fix. This is the demo, the free tier, and the hook.
-2. **Continuous evidence collection.** Enable Audit Manager's SOC 2 framework assessment +
-   keep Config/Security Hub running; a monthly (configurable) **snapshot Lambda** writes a
-   dated, immutable evidence bundle (posture summary, control status, raw finding exports) to
-   the customer's own **versioned S3 evidence bucket** — the "operating effectively over the
-   audit period" record auditors actually need. Optional S3 Object Lock for tamper-evidence.
+2. **Continuous evidence collection — the poppy's own (Audit Manager is unavailable to
+   new accounts, §1.2).** Keep Config/Security Hub running; the **snapshot Lambda** (monthly,
+   configurable) is THE evidence collector: it writes a dated, immutable evidence bundle
+   (posture summary, per-control status, raw finding exports, Config state) to the customer's
+   own **versioned S3 evidence bucket** — the "operating effectively over the audit period"
+   record auditors actually need. Optional S3 Object Lock for tamper-evidence.
 3. **The policy pack.** Generated written policies auditors require (access control, change
    management, incident response, vendor management, data retention…), pre-filled from what
    the poppy can observe (e.g. the real IAM/MFA posture), editable, exported as documents.
@@ -88,7 +94,7 @@ AgentsPoppy poppy UI (screens: Readiness · Evidence · Policies · Export · Co
         │ backend routes (scoped, short-lived creds via the broker)
         ▼
   sidecar backend ──► enable/configure: Config recorder · Security Hub (CIS+FSBP)
-        │                              · Audit Manager SOC 2 assessment   (ledger-recorded)
+        │                                                        (ledger-recorded)
         │            read: findings, control status, resource inventory   (read-only)
         ▼
   CloudFormation stack `AuditPoppyStack` (the ONLY deployed compute):
@@ -110,7 +116,7 @@ AgentsPoppy poppy UI (screens: Readiness · Evidence · Policies · Export · Co
 
 ### Teardown / leaves-no-trace nuance (design it in from day 1)
 
-Config, Security Hub and Audit Manager are **account-level services**, not stack resources.
+Config and Security Hub are **account-level services**, not stack resources.
 Rules: (a) record every enablement in the transparency ledger with a **pre-existing check** —
 if the service was already on, the poppy records "found enabled, not ours" and teardown never
 touches it; (b) teardown offers to disable exactly what the poppy enabled (default on),
@@ -124,13 +130,15 @@ AuditPoppy needs to *see everything* (that is the product) and *change almost no
 
 - **Wide READ, explicitly enumerated** — Describe/List/Get across the audited services (IAM,
   S3, EC2, RDS, Lambda, CloudTrail, KMS, …) plus `securityhub:Get/Describe*`,
-  `config:Get/Describe/Select*`, `auditmanager:Get/List*`. No `iam:*` writes, no data-plane
+  `config:Get/Describe/Select*`. No `iam:*` writes, no data-plane
   reads (it reads *about* buckets, never *from* them — no `s3:GetObject` outside its own
   evidence bucket). This distinction goes in the grant `reason` fields and the dossier.
 - **Narrow WRITE**: its stack (`AuditPoppyStack*`), its bucket (`auditpoppy-*`),
   its table, and the service-enablement actions (`config:Put*`, `securityhub:Enable*`/
-  `BatchEnableStandards`, `auditmanager:Create/Update*` on its own assessment), all
-  attribution-tagged where AWS allows.
+  `BatchEnableStandards`), all attribution-tagged where AWS allows. Phase 0 note: enabling
+  Config needs `iam:CreateServiceLinkedRole` (config.amazonaws.com) + `iam:PassRole` on the
+  SLR, and Config validates a fresh SLR with **minutes of lag** — the enable flow must
+  retry with backoff, not fail.
 - The permission screen already presents this honestly ("N of M confined; the wide ones are
   read-only") and the risk rating will be what it is — the listing copy explains *why* wide
   read is the product, in the approval-preview `reason`s, not by fighting the rating.
@@ -140,11 +148,13 @@ AuditPoppy needs to *see everything* (that is the product) and *change almost no
 ## 5. Frameworks & mapping
 
 - **v1:** SOC 2 Trust Services Criteria (the market's ask) with the technical checks sourced
-  from Security Hub's **CIS AWS Foundations** + **AWS FSBP** standards and Audit Manager's
-  SOC 2 framework. The TSC↔check mapping table is versioned content in the repo — reviewed,
-  test-pinned, and the single place a control's "why an auditor cares" prose lives.
-- **Later:** ISO 27001 and PCI views are mostly re-mapping the same checks (Audit Manager has
-  frameworks for both); multi-framework is a rendering feature, not new collection.
+  from Security Hub's **CIS AWS Foundations** + **AWS FSBP** standards. The TSC↔check
+  mapping table is **fully repo-owned**, versioned content — reviewed, test-pinned, and the
+  single place a control's "why an auditor cares" prose lives. (It was going to lean on
+  Audit Manager's prebuilt SOC 2 framework; phase 0 found that service closed to new
+  accounts, so the mapping is ours outright — more work once, no deprecation hostage.)
+- **Later:** ISO 27001 and PCI views are mostly re-mapping the same checks; multi-framework
+  is a rendering feature, not new collection.
 
 ## 6. Privacy & threat model (the honest paragraph, up front)
 
@@ -166,7 +176,6 @@ pricing as of design time — re-verify at implementation and print live numbers
 |---|---|---|
 | AWS Config | per configuration item recorded + per rule evaluation | $3–15/mo |
 | Security Hub | per security check + per finding ingested (30-day free trial) | $1–10/mo |
-| Audit Manager | per resource assessment | $5–25/mo when assessing |
 | Evidence bucket + Lambda | S3 + one invocation/month | cents |
 
 Rule inherited from AGENTS.md §9 ("show the money"): no service is enabled silently, the
@@ -255,7 +264,7 @@ complete by itself, with nothing in the shipped poppy to go stale.
 | Overclaiming ("compliant") anywhere in copy | naming law §0; test-pinned strings like the dossier's |
 | Wide-read optics ("it reads everything") | read-only enumerated grants + reasons; its own dossier; the Host-enforced machine chip (§3) |
 | AWS cost surprise | per-service toggles, live estimates, Costs screen actuals |
-| Audit Manager / Security Hub regional gaps | region picker limited to supported regions (MailPoppy SES precedent) |
+| Security Hub regional gaps | region picker limited to supported regions (MailPoppy SES precedent) |
 | Policy pack read as legal advice | "guidance, not legal advice" framing on every generated doc |
 | Teardown deleting evidence a user needs | export-first flow + type-to-confirm + "found enabled, not ours" ledger semantics (§3) |
 | Mapping drift as AWS renames checks | versioned mapping table + a sync test against the live standards list |
@@ -288,10 +297,11 @@ complete by itself, with nothing in the shipped poppy to go stale.
 
 ## 12. Phase plan
 
-0. **De-risk (small, live):** one throwaway account — enable Config+Security Hub+Audit
-   Manager by API, read findings/evidence by API, measure real costs for a week, verify
-   teardown semantics (incl. "already enabled" detection). This is the phase-0 the whole
-   cost/teardown story depends on.
+0. **De-risk (small, live) — RUNNING (2026-09-02, sandbox REDACTED-ACCOUNT-ID/eu-west-1; log:
+   `phase0-derisk.md`).** Already caught the design-changing fact: **Audit Manager is in
+   maintenance mode (closed to new accounts since 2026-04-30) → cut from the
+   architecture**. Config + Security Hub enable/read paths verified live; costs measured
+   over a week; teardown semantics verified at week's end.
 1. Readiness scan + gap report (read-only; no stack) — shippable free tier.
 2. The stack: evidence bucket + snapshot Lambda + continuous collection.
 3. Policy pack + auditor export.
