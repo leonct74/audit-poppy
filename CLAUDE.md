@@ -24,7 +24,9 @@ anti-Vanta wedge: *compliance evidence that never leaves your cloud.*
 
 ## Status
 
-- ✅ DESIGN.md drafted (2026-09-02) — awaiting founder answers to §11 (name, pricing,
-  freemium split, policy pack in v1, Host-enforced machine declaration).
+- ✅ DESIGN.md drafted (2026-09-02). **Name DECIDED: AuditPoppy** (id
+  `com.auditpoppy.desktop`; tagline carries "SOC 2", the name never does — §11.1).
+  Awaiting founder answers to the remaining §11 questions: pricing, freemium split,
+  policy pack in v1, Host-enforced machine declaration.
 - Next: phase 0 de-risk (DESIGN §12) — live-enable Config/Security Hub/Audit Manager in a
   throwaway account, measure real costs for a week, verify teardown semantics.
