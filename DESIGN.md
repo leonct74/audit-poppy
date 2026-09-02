@@ -228,6 +228,14 @@ via the AgentsPoppy first-party checkout. Rationale kept for the record: complia
 are the richest in software; at $499/yr it undercuts Vanta ~95% while still reading as a
 serious product — $14.99 would cost credibility, not gain adoption.
 
+**$499 is the launch value, not a constant (founder, 2026-09-02): the price is NEVER
+hardcoded in the poppy.** It lives in the commerce database (the `products` collection,
+edited from the /admin panel) — the platform's authoritative pricing source, which the
+catalogue pages, the checkout and the listing already read live. The poppy UI shows the
+price only by fetching it (the products API), and no dollar amount appears in the poppy's
+code, manifest, listing copy or screenshots — a founder price change from /admin must be
+complete by itself, with nothing in the shipped poppy to go stale.
+
 ## 9. Non-goals (v1) — say no in the design so the copy never overclaims
 
 - **No laptops/MDM, no HR/IdP integrations, no vendor-management workflows** — the non-AWS
@@ -263,7 +271,7 @@ serious product — $14.99 would cost credibility, not gain adoption.
    as "SOC 2 in a box" to a skeptical buyer. The explicitness lives in the tagline instead:
    **"AuditPoppy — SOC 2 audit-readiness in your own AWS"** — which is also what search
    matches. Manifest id: `com.auditpoppy.desktop`.
-2. **Pricing — DECIDED (founder, 2026-09-02): $499/yr** per AWS account (§8).
+2. **Pricing — DECIDED (founder, 2026-09-02): $499/yr** per AWS account, as the launch value in the commerce database — never hardcoded in the poppy (§8).
 3. **Licensing model — DECIDED (founder, 2026-09-02): three tiers.** Personal/evaluation
    free with watermarked exports; **companies under 10 employees free with mandatory
    registration on the AgentsPoppy website** (identity known, license granted, clean
