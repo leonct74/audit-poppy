@@ -182,6 +182,13 @@ pricing as of design time — re-verify at implementation and print live numbers
 Rule inherited from AGENTS.md §9 ("show the money"): no service is enabled silently, the
 estimate is shown next to the toggle, and the Costs screen shows the actuals afterwards.
 
+**The free-trial rule (from the founder's own reaction to phase 0, 2026-09-02):** where a
+service has a free trial (Security Hub's 30 days), the toggle and the Costs screen must say
+**"free trial ends on [date] — expected cost after that: $X/month while enabled"**, and the
+Costs screen shows the disable switch right next to that line. A user must never discover a
+trial converted to charges; "free trial" without the end date and the off switch is how
+silent subscriptions happen, and this product exists to remove exactly that kind of doubt.
+
 ## 8. Licensing & pricing model — DECIDED (founder, 2026-09-02): personal-free, business-paid
 
 **No feature-gated freemium split.** The whole product is free — every feature, no tier
