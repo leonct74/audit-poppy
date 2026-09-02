@@ -31,6 +31,15 @@ anti-Vanta wedge: *compliance evidence that never leaves your cloud.*
   clean exports); 10+ paid. No DRM** (§8). **Price DECIDED: $499/yr — as the /admin-editable commerce-db value; NEVER hardcode a
   dollar amount in poppy code, manifest, listing copy or screenshots.** **Policy pack in v1: INCLUDED. Host-enforced
   `machine: "aws-only"`: YES — first enforced-chip poppy.** All §11 questions decided;
-  the design is complete. Next: phase 0 de-risk, then the full build in its own session.
-- Next: phase 0 de-risk (DESIGN §12) — live-enable Config/Security Hub/Audit Manager in a
-  throwaway account, measure real costs for a week, verify teardown semantics.
+  the design is complete.
+- ✅ Phase 0 de-risk LIVE since 2026-09-02 (`phase0-derisk.md`): Audit Manager cut
+  (closed to new accounts); enable order + read path verified; costs measuring for a
+  week; teardown + dead-man scheduled (09-09 / 09-20).
+- ✅ **Full build DONE (2026-09-02, phases 1–3 + the in-app half of 4 — DESIGN §12
+  "Build state").** Monorepo green: 69 tests, typecheck, both bundles, manifest generated
+  from `permissionSet()` and valid under the platform validator. Both laws are
+  test-pinned repo-wide (`packages/core/src/naming.test.ts`).
+- Next: phase-0 week-end readout (scheduled) → live verify in the sandbox (install,
+  full loop, the machine-gate check, `npm run certify`) → platform-side items (commerce
+  product, small-company registration flow, catalogue submission) — DESIGN §12 "What
+  remains before listing".

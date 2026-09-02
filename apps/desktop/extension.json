@@ -1,0 +1,328 @@
+{
+  "id": "com.auditpoppy.desktop",
+  "name": "AuditPoppy",
+  "version": "0.1.0",
+  "description": "Get audit-ready for your SOC 2 audit, inside your own AWS account — gap report, continuous evidence collection, policy pack, auditor export. Evidence never leaves your cloud.",
+  "icon": "frontend/auditpoppy-icon.png",
+  "bugsUrl": "https://github.com/leonct74/audit-poppy/issues",
+  "permissionSet": {
+    "id": "auditpoppy-backend",
+    "name": "AuditPoppy backend",
+    "description": "Checks your AWS account against the security checks auditors ask about, and keeps the evidence in your own account. Its READ access is wide on purpose — reading your setup is the product — but it is read-only: it looks at how things are configured, never at the data inside them. Everything it creates or changes is its own: one stack, one evidence bucket, one table, plus turning on the two AWS checking services (with your approval, costs shown first). It never changes the resources it reports on — the gap report tells you what to fix; fixing stays in your hands.",
+    "grants": [
+      {
+        "service": "securityhub",
+        "actions": [
+          "EnableSecurityHub"
+        ],
+        "resourceScope": "*",
+        "reason": "Turns on AWS Security Hub, the service that runs the security checks your report is built from — only after showing you what it costs."
+      },
+      {
+        "service": "securityhub",
+        "actions": [
+          "DisableSecurityHub",
+          "BatchEnableStandards",
+          "BatchDisableStandards",
+          "TagResource",
+          "UntagResource"
+        ],
+        "resourceScope": "arn:aws:securityhub:*:*:hub/default",
+        "reason": "Chooses which check catalogues run (CIS and AWS foundational best practices), and turns Security Hub back off when you remove AuditPoppy — only if AuditPoppy was the one that turned it on."
+      },
+      {
+        "service": "securityhub",
+        "actions": [
+          "DescribeHub",
+          "GetEnabledStandards",
+          "DescribeStandards",
+          "DescribeStandardsControls",
+          "GetFindings"
+        ],
+        "resourceScope": "*",
+        "reason": "Reads the results of the security checks — which passed, which failed, and on what — to build your gap report and evidence."
+      },
+      {
+        "service": "config",
+        "actions": [
+          "PutConfigurationRecorder",
+          "PutDeliveryChannel",
+          "StartConfigurationRecorder",
+          "StopConfigurationRecorder",
+          "DeleteConfigurationRecorder",
+          "DeleteDeliveryChannel"
+        ],
+        "resourceScope": "*",
+        "reason": "Turns on AWS Config, which keeps the record of configuration changes your audit evidence needs — and turns it off again when you remove AuditPoppy, only if AuditPoppy enabled it."
+      },
+      {
+        "service": "config",
+        "actions": [
+          "DescribeConfigurationRecorders",
+          "DescribeConfigurationRecorderStatus",
+          "DescribeDeliveryChannels",
+          "DescribeConfigRules",
+          "DescribeComplianceByConfigRule",
+          "GetComplianceDetailsByConfigRule",
+          "GetDiscoveredResourceCounts"
+        ],
+        "resourceScope": "*",
+        "reason": "Reads whether change recording is on, what the recorded checks found, and how many resources your account has — the number your cost estimate is computed from."
+      },
+      {
+        "service": "cloudformation",
+        "actions": [
+          "CreateStack",
+          "UpdateStack",
+          "DeleteStack",
+          "DescribeStacks",
+          "DescribeStackEvents",
+          "DescribeStackResources",
+          "ListStackResources",
+          "GetTemplate",
+          "TagResource"
+        ],
+        "resourceScope": "arn:aws:cloudformation:*:*:stack/AuditPoppyStack/*"
+      },
+      {
+        "service": "cloudformation",
+        "actions": [
+          "ValidateTemplate",
+          "GetTemplateSummary"
+        ],
+        "resourceScope": "*",
+        "reason": "Before deploying, asks AWS to double-check its own deployment plan, so a mistake is caught before anything is created in your account."
+      },
+      {
+        "service": "iam",
+        "actions": [
+          "CreateRole",
+          "DeleteRole",
+          "GetRole",
+          "TagRole",
+          "UntagRole",
+          "PutRolePolicy",
+          "DeleteRolePolicy",
+          "GetRolePolicy",
+          "ListRolePolicies",
+          "ListAttachedRolePolicies",
+          "PassRole",
+          "PutRolePermissionsBoundary",
+          "DeleteRolePermissionsBoundary"
+        ],
+        "resourceScope": "arn:aws:iam::*:role/AuditPoppyStack-*"
+      },
+      {
+        "service": "iam",
+        "actions": [
+          "CreateServiceLinkedRole",
+          "DeleteServiceLinkedRole",
+          "GetServiceLinkedRoleDeletionStatus"
+        ],
+        "resourceScope": "arn:aws:iam::*:role/aws-service-role/config.amazonaws.com/AWSServiceRoleForConfig*",
+        "reason": "AWS Config needs its own AWS-defined helper role to read your configuration; this creates exactly that role when Config is turned on, and removes it at teardown if AuditPoppy created it."
+      },
+      {
+        "service": "lambda",
+        "actions": [
+          "CreateFunction",
+          "DeleteFunction",
+          "GetFunction",
+          "GetFunctionConfiguration",
+          "UpdateFunctionCode",
+          "UpdateFunctionConfiguration",
+          "AddPermission",
+          "RemovePermission",
+          "InvokeFunction",
+          "TagResource",
+          "UntagResource",
+          "ListTags"
+        ],
+        "resourceScope": "arn:aws:lambda:*:*:function:AuditPoppyStack-*"
+      },
+      {
+        "service": "s3",
+        "actions": [
+          "CreateBucket",
+          "DeleteBucket",
+          "PutBucketPolicy",
+          "GetBucketPolicy",
+          "DeleteBucketPolicy",
+          "PutEncryptionConfiguration",
+          "GetEncryptionConfiguration",
+          "PutBucketPublicAccessBlock",
+          "GetBucketPublicAccessBlock",
+          "PutBucketTagging",
+          "PutBucketVersioning",
+          "GetBucketVersioning",
+          "PutLifecycleConfiguration",
+          "GetLifecycleConfiguration",
+          "ListBucket",
+          "ListBucketVersions",
+          "HeadBucket"
+        ],
+        "resourceScope": "arn:aws:s3:::auditpoppy-*"
+      },
+      {
+        "service": "s3",
+        "actions": [
+          "GetObject",
+          "PutObject",
+          "DeleteObject",
+          "GetObjectVersion",
+          "DeleteObjectVersion"
+        ],
+        "resourceScope": "arn:aws:s3:::auditpoppy-*/*"
+      },
+      {
+        "service": "dynamodb",
+        "actions": [
+          "CreateTable",
+          "DeleteTable",
+          "DescribeTable",
+          "TagResource",
+          "UntagResource",
+          "ListTagsOfResource",
+          "GetItem",
+          "PutItem",
+          "UpdateItem",
+          "DeleteItem",
+          "Query",
+          "Scan",
+          "BatchWriteItem"
+        ],
+        "resourceScope": "arn:aws:dynamodb:*:*:table/AuditPoppyStack-*"
+      },
+      {
+        "service": "events",
+        "actions": [
+          "PutRule",
+          "DeleteRule",
+          "DescribeRule",
+          "PutTargets",
+          "RemoveTargets",
+          "ListTargetsByRule",
+          "TagResource",
+          "UntagResource"
+        ],
+        "resourceScope": "arn:aws:events:*:*:rule/AuditPoppyStack-*"
+      },
+      {
+        "service": "logs",
+        "actions": [
+          "CreateLogGroup",
+          "DeleteLogGroup",
+          "PutRetentionPolicy",
+          "TagResource"
+        ],
+        "resourceScope": "arn:aws:logs:*:*:log-group:/aws/lambda/AuditPoppyStack-*"
+      },
+      {
+        "service": "iam",
+        "actions": [
+          "GetAccountSummary",
+          "GetAccountPasswordPolicy",
+          "ListUsers",
+          "ListMFADevices"
+        ],
+        "resourceScope": "*",
+        "reason": "Reads how sign-in is set up — how many users, who lacks a second factor, the password rules — to pre-fill your access-control policy with the real numbers. It never creates, changes or deletes any user."
+      },
+      {
+        "service": "ec2",
+        "actions": [
+          "DescribeInstances",
+          "DescribeSecurityGroups",
+          "DescribeVpcs"
+        ],
+        "resourceScope": "*",
+        "reason": "Counts your servers and networks to estimate the monthly cost of the checking services before you turn anything on. Configuration only — never what runs inside."
+      },
+      {
+        "service": "rds",
+        "actions": [
+          "DescribeDBInstances"
+        ],
+        "resourceScope": "*",
+        "reason": "Counts your databases for the same cost estimate. It sees that a database exists and how it is configured — never the data in it."
+      },
+      {
+        "service": "lambda",
+        "actions": [
+          "ListFunctions"
+        ],
+        "resourceScope": "*",
+        "reason": "Counts your functions for the same cost estimate — names and settings only, never code or data."
+      },
+      {
+        "service": "s3",
+        "actions": [
+          "ListAllMyBuckets"
+        ],
+        "resourceScope": "*",
+        "reason": "Lists your storage bucket names — to count them for the cost estimate, and to find its own evidence bucket. Names only, never what is inside."
+      },
+      {
+        "service": "cloudtrail",
+        "actions": [
+          "DescribeTrails",
+          "GetTrailStatus"
+        ],
+        "resourceScope": "*",
+        "reason": "Checks whether AWS activity logging is turned on, so your incident-response policy states what is actually true."
+      },
+      {
+        "service": "pricing",
+        "actions": [
+          "GetProducts"
+        ],
+        "resourceScope": "*",
+        "reason": "Fetches AWS's current prices so every cost shown to you is live, never a stale built-in number."
+      },
+      {
+        "service": "sts",
+        "actions": [
+          "GetCallerIdentity"
+        ],
+        "resourceScope": "*",
+        "reason": "Checks which AWS account it is connected to, so every screen can show where it is about to work."
+      }
+    ],
+    "requiredTags": [
+      "agentspoppy:account",
+      "agentspoppy:app",
+      "agentspoppy:connection"
+    ],
+    "limits": null,
+    "network": {
+      "egress": "aws-only",
+      "infrastructure": "none",
+      "machine": "aws-only"
+    }
+  },
+  "frontend": {
+    "entry": "frontend/index.html"
+  },
+  "backend": {
+    "entry": "backend/index.cjs",
+    "transport": "http",
+    "runtime": "node22",
+    "isolation": "strict"
+  },
+  "teardown": {
+    "endpoint": "/teardown"
+  },
+  "compliance": {
+    "dataHandled": "Security findings, audit evidence and policy documents about your AWS account — stored only in your own AWS account (your evidence bucket and table) and on your machine. The developer receives none of it.",
+    "subprocessors": [],
+    "securityContact": "https://github.com/leonct74/audit-poppy/security/advisories/new"
+  },
+  "capabilities": [
+    "aws:credentials",
+    "connection:read",
+    "backend:invoke",
+    "host:openExternal",
+    "host:notify",
+    "commerce:purchase"
+  ]
+}

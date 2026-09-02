@@ -309,13 +309,46 @@ complete by itself, with nothing in the shipped poppy to go stale.
    `phase0-derisk.md`).** Already caught the design-changing fact: **Audit Manager is in
    maintenance mode (closed to new accounts since 2026-04-30) → cut from the
    architecture**. Config + Security Hub enable/read paths verified live; costs measured
-   over a week; teardown semantics verified at week's end.
-1. Readiness scan + gap report (read-only; no stack) — shippable free tier.
-2. The stack: evidence bucket + snapshot Lambda + continuous collection.
-3. Policy pack + auditor export.
-4. Checkout integration + listing (manifest carries `network` {aws-only, none, machine:
-   aws-only} + its own `compliance` block; dossier pages cross-link both ways).
+   over a week; teardown semantics verified at week's end (scheduled 09-09 + dead-man 09-20).
+1. Readiness scan + gap report — **BUILT (2026-09-02)**.
+2. The stack: evidence bucket + snapshot Lambda + continuous collection — **BUILT**.
+3. Policy pack + auditor export — **BUILT**.
+4. Checkout integration + listing — **in-app half BUILT** (Export tab: live-priced buy via
+   the commerce bridge, small-company registration link, manage-billing; manifest carries
+   `network` {aws-only, none, machine: aws-only} + the `compliance` block, and validates
+   against the platform validator). **Listing/submission remains** (below).
 
-All §11 questions are now DECIDED — the design is complete. Phase 0 runs first (results
-land in `phase0-derisk.md`, the MailPoppy pattern); the full build runs in a **separate
-session** (per project convention) against this document.
+### Build state (2026-09-02, first full build — all workspaces green)
+
+Monorepo: `packages/core` (pure domain: the repo-owned TSC↔check mapping — 43 CIS 1.2.0 +
+36 FSBP entries with auditor prose; gap report with the warming-up rule; enablement
+ledger; costs + the free-trial rule; evidence bundles; licensing/watermark; policy pack;
+a dependency-free PDF writer; both laws test-pinned across every shipped file),
+`apps/desktop` (React on the poppy design kit; Readiness · Evidence · Policies · Export ·
+Costs · Feedback-last; helper prompt generated from the live catalogues; type-to-confirm
+disable switch on Costs), `apps/desktop/node-sidecar` (confined node22 bundle; baseline →
+enable in the phase-0-proven order with a write-ahead ledger; readiness read path;
+two-phase stack deploy, resumable from live state; `/teardown` honouring "found enabled,
+not ours"), `lambdas` (the snapshot collector). 69 tests, typecheck clean,
+`extension.json` GENERATED from `permissionSet()` (parity-tested) and green under the
+platform's own `validate-manifest`.
+
+**Small deviation from §3's sketch, recorded:** v0.1 keeps policy answers + auditor notes
+in the sidecar's private dataDir (host-owned, confinement-safe); the DynamoDB
+`assessments` table holds scan history. Moving answers/settings into the table (so they
+survive a reinstall) is a listed follow-up, not a design change.
+
+### What remains before listing
+
+1. Phase-0 week-end: costs readout + teardown verification (scheduled 09-09/09-20) feed
+   §7's printed magnitudes.
+2. Live verify in the sandbox: install into AgentsPoppy, enable → report → stack →
+   snapshot → export → teardown; confirm the `machine: "aws-only"` gate refuses nothing
+   we need (§3) — then `npm run certify` for the leaves-no-trace certificate.
+3. Platform-side work items: the `auditpoppy-business` product in the commerce db (price
+   from /admin — never in the poppy), the small-company registration + grant flow (§8),
+   the catalogue submission (RELEASING-POPPY.md).
+
+All §11 questions are DECIDED — the design is complete. Phase 0 runs first (results land
+in `phase0-derisk.md`, the MailPoppy pattern); the full build ran in its own session
+against this document (2026-09-02).
