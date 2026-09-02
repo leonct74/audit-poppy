@@ -1,9 +1,9 @@
-# CLAUDE.md — CompliancePoppy
+# CLAUDE.md — AuditPoppy
 
 Operating guide for working in this repo. **`DESIGN.md` is the source of truth** — read it
 fully before any work; when a design decision changes, update DESIGN.md in the same change.
 
-> **Boundary:** CompliancePoppy is a standalone project that runs *on* AgentsPoppy (never
+> **Boundary:** AuditPoppy is a standalone project that runs *on* AgentsPoppy (never
 > forks it). The mailpoppy / traffic-poppy / other poppy repos are READ-ONLY reference
 > material: copy patterns from them, never modify them from here.
 

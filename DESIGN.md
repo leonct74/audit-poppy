@@ -1,16 +1,16 @@
-# DESIGN.md — CompliancePoppy
+# DESIGN.md — AuditPoppy
 
-Source of truth for **CompliancePoppy**: SOC 2 audit-readiness for the customer's **own AWS
+Source of truth for **AuditPoppy**: SOC 2 audit-readiness for the customer's **own AWS
 account, from inside their own AWS account**. An AgentsPoppy extension ("poppy") built to the
 framework (`~/Projects/agentspoppy/AGENTS.md` + `docs/INTEGRATION.md`). This doc records
 decisions and rationale; update it whenever a decision changes.
 
-> **Boundary:** CompliancePoppy is a standalone project. It runs *on* AgentsPoppy — it does
+> **Boundary:** AuditPoppy is a standalone project. It runs *on* AgentsPoppy — it does
 > not fork or clone it. It never touches the mailpoppy or other poppy repos.
 
 > **Sibling, not overlap:** the platform's per-poppy **compliance dossier**
 > (`agentspoppy/docs/specs/compliance-dossier.md`, live 2026-09-01) documents the *poppies*
-> a customer runs. CompliancePoppy covers **the rest of their AWS estate** — the part their
+> a customer runs. AuditPoppy covers **the rest of their AWS estate** — the part their
 > auditor actually spends the audit on. The two cross-sell each other.
 
 ---
@@ -18,7 +18,7 @@ decisions and rationale; update it whenever a decision changes.
 ## 0. The naming law (inherited, and it binds every word this poppy ships)
 
 Nobody can sell a SOC 2 certificate — a SOC 2 report is signed only by a licensed CPA firm
-after an audit, and Vanta cannot issue one either. CompliancePoppy sells everything **before**
+after an audit, and Vanta cannot issue one either. AuditPoppy sells everything **before**
 the auditor: continuous checks, evidence collection, gap analysis, policy documents, an
 auditor-ready export. Approved vocabulary: **"audit-ready"**, **"evidence for your SOC 2
 audit"**, **"mapped to the SOC 2 Trust Services Criteria"**. Forbidden, everywhere, including
@@ -33,7 +33,7 @@ Vanta/Drata/Secureframe sell audit-readiness at **$10k–30k+/year**, and their 
 an irony at its core: **to prove you're secure, you grant a third-party SaaS read access to
 your entire cloud.** That is exactly the trade AgentsPoppy exists to kill.
 
-CompliancePoppy does the AWS half of that job **inside the customer's own account**:
+AuditPoppy does the AWS half of that job **inside the customer's own account**:
 
 1. **No vendor in the evidence path.** Findings, evidence snapshots and reports live in the
    customer's own S3/DynamoDB. Olly Digital never sees a security posture, a resource name,
@@ -41,7 +41,7 @@ CompliancePoppy does the AWS half of that job **inside the customer's own accoun
 2. **AWS does the heavy lifting.** AWS already ships the machinery Vanta resells a view of:
    **AWS Config** (resource recording + managed rules), **Security Hub** (CIS / AWS
    Foundational Security Best Practices checks), **AWS Audit Manager** (a prebuilt SOC 2
-   framework with automatic evidence collection). CompliancePoppy turns them on, scopes them,
+   framework with automatic evidence collection). AuditPoppy turns them on, scopes them,
    translates their output into auditor language, and packages the result. It is mostly
    orchestration + rendering — the same shape as MailPoppy's GuardDuty integration, scaled up.
 3. **A fraction of the price.** The AWS services bill single-digit to low-tens of $/month in
@@ -49,7 +49,7 @@ CompliancePoppy does the AWS half of that job **inside the customer's own accoun
    ~95% below the incumbents (§8). Price is credibility in this market: it is priced as a
    compliance product, not a $14.99 utility.
 4. **Honest about scope.** SOC 2 covers the whole company — laptops, HR on/offboarding,
-   vendors, written policies. CompliancePoppy covers **the AWS estate + the written policies +
+   vendors, written policies. AuditPoppy covers **the AWS estate + the written policies +
    the evidence workflow**, and says so plainly. v1 does not pretend to be a GRC suite
    (non-goals in §9). For many small SaaS companies the AWS estate *is* most of the technical
    audit; the rest is process the policy pack templates.
@@ -91,8 +91,8 @@ AgentsPoppy poppy UI (screens: Readiness · Evidence · Policies · Export · Co
         │                              · Audit Manager SOC 2 assessment   (ledger-recorded)
         │            read: findings, control status, resource inventory   (read-only)
         ▼
-  CloudFormation stack `CompliancePoppyStack` (the ONLY deployed compute):
-     S3 evidence bucket  (versioned; optional Object Lock; compliancepoppy-*)
+  CloudFormation stack `AuditPoppyStack` (the ONLY deployed compute):
+     S3 evidence bucket  (versioned; optional Object Lock; auditpoppy-*)
      snapshot Lambda     (monthly EventBridge rule → posture+findings bundle → S3)
      DynamoDB `assessments` (scan history, policy-doc state, settings)
 ```
@@ -100,7 +100,7 @@ AgentsPoppy poppy UI (screens: Readiness · Evidence · Policies · Export · Co
 - **The poppy's own cloud code is one Lambda that talks only to AWS** → `network.egress:
   "aws-only"`, `infrastructure: "none"` (it creates nothing internet-facing).
 - **`network.machine`: a real, enforceable list.** The desktop half talks to AWS and the
-  platform — nothing else, no user-typed hosts. CompliancePoppy should declare
+  platform — nothing else, no user-typed hosts. AuditPoppy should declare
   `machine: "aws-only"` (backend; the tab's platform call is exempt by contract) and become
   **the first poppy wearing the Host-enforced chip** — a compliance product whose own network
   behaviour is host-refused-beyond-declaration is the best possible proof-of-concept, and the
@@ -120,14 +120,14 @@ export flow is offered first. The certification harness must pass with these sem
 
 ## 4. Permissions — the first deliberately WIDE poppy, and how it stays honest
 
-CompliancePoppy needs to *see everything* (that is the product) and *change almost nothing*:
+AuditPoppy needs to *see everything* (that is the product) and *change almost nothing*:
 
 - **Wide READ, explicitly enumerated** — Describe/List/Get across the audited services (IAM,
   S3, EC2, RDS, Lambda, CloudTrail, KMS, …) plus `securityhub:Get/Describe*`,
   `config:Get/Describe/Select*`, `auditmanager:Get/List*`. No `iam:*` writes, no data-plane
   reads (it reads *about* buckets, never *from* them — no `s3:GetObject` outside its own
   evidence bucket). This distinction goes in the grant `reason` fields and the dossier.
-- **Narrow WRITE**: its stack (`CompliancePoppyStack*`), its bucket (`compliancepoppy-*`),
+- **Narrow WRITE**: its stack (`AuditPoppyStack*`), its bucket (`auditpoppy-*`),
   its table, and the service-enablement actions (`config:Put*`, `securityhub:Enable*`/
   `BatchEnableStandards`, `auditmanager:Create/Update*` on its own assessment), all
   attribution-tagged where AWS allows.
@@ -208,11 +208,17 @@ built-in billing portal like every first-party product.
 
 ## 11. Open questions for the founder
 
-1. **Name** — CompliancePoppy (working title) vs. AuditPoppy vs. something warmer?
+1. **Name — DECIDED (founder, 2026-09-02): AuditPoppy.** "Soc2Poppy" was considered and
+   rejected: SOC 2 is AICPA's mark, none of the incumbents put it in their product name
+   (their neutral names + SOC-2-first taglines are that legal judgment congealed into a
+   pattern), and a certificate-named product both boxes out ISO 27001/PCI views and reads
+   as "SOC 2 in a box" to a skeptical buyer. The explicitness lives in the tagline instead:
+   **"AuditPoppy — SOC 2 audit-readiness in your own AWS"** — which is also what search
+   matches. Manifest id: `com.auditpoppy.desktop`.
 2. **Pricing** — accept the $499/yr recommendation, or position higher ($999/yr)?
 3. **Freemium split** — free gap report (recommended) vs. fully paid?
 4. **Policy pack in v1** — include (recommended; it is half the perceived value) or defer?
-5. **The Host-enforced machine declaration** — agree CompliancePoppy should be the first
+5. **The Host-enforced machine declaration** — agree AuditPoppy should be the first
    poppy to wear the enforced chip (worth sequencing work for)?
 
 ## 12. Phase plan
