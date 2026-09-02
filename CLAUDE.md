@@ -29,7 +29,8 @@ anti-Vanta wedge: *compliance evidence that never leaves your cloud.*
   **Licensing DECIDED: three tiers — personal free (watermarked exports); under-10-employee
   companies free with mandatory AgentsPoppy registration (identity known, granted license,
   clean exports); 10+ paid. No DRM** (§8). **Price DECIDED: $499/yr — as the /admin-editable commerce-db value; NEVER hardcode a
-  dollar amount in poppy code, manifest, listing copy or screenshots.** Awaiting founder answers to the remaining §11
-  questions: policy pack in v1, Host-enforced machine declaration.
+  dollar amount in poppy code, manifest, listing copy or screenshots.** **Policy pack in v1: INCLUDED. Host-enforced
+  `machine: "aws-only"`: YES — first enforced-chip poppy.** All §11 questions decided;
+  the design is complete. Next: phase 0 de-risk, then the full build in its own session.
 - Next: phase 0 de-risk (DESIGN §12) — live-enable Config/Security Hub/Audit Manager in a
   throwaway account, measure real costs for a week, verify teardown semantics.

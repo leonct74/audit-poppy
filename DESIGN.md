@@ -278,9 +278,13 @@ complete by itself, with nothing in the shipped poppy to go stale.
    exports); 10+ employees paid. No feature-gated freemium. Full rules in §8, including
    the recommended watermark wording ("…not licensed for business use"), the annual
    re-attestation recommendation, and the no-DRM rule.
-4. **Policy pack in v1** — include (recommended; it is half the perceived value) or defer?
-5. **The Host-enforced machine declaration** — agree AuditPoppy should be the first
-   poppy to wear the enforced chip (worth sequencing work for)?
+4. **Policy pack in v1 — DECIDED (founder, 2026-09-02: "proceed" on the recommendation):
+   INCLUDED.** It is half the perceived value against Vanta, and it is rendering work,
+   not infrastructure.
+5. **The Host-enforced machine declaration — DECIDED (founder, 2026-09-02: "proceed" on
+   the recommendation): YES.** AuditPoppy declares `machine: "aws-only"` and is sequenced
+   to be the first poppy wearing the Host-enforced chip (§3); verify the gate's
+   AWS-matching against the poppy's real connections before release.
 
 ## 12. Phase plan
 
@@ -294,5 +298,6 @@ complete by itself, with nothing in the shipped poppy to go stale.
 4. Checkout integration + listing (manifest carries `network` {aws-only, none, machine:
    aws-only} + its own `compliance` block; dossier pages cross-link both ways).
 
-Implementation runs in a **separate session** (per project convention), starting with
-phase 0, against this document.
+All §11 questions are now DECIDED — the design is complete. Phase 0 runs first (results
+land in `phase0-derisk.md`, the MailPoppy pattern); the full build runs in a **separate
+session** (per project convention) against this document.
