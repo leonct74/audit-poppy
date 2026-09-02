@@ -31,6 +31,25 @@ anti-Vanta wedge: *compliance evidence that never leaves your cloud.*
   clean exports); 10+ paid. No DRM** (§8). **Price DECIDED: $499/yr — as the /admin-editable commerce-db value; NEVER hardcode a
   dollar amount in poppy code, manifest, listing copy or screenshots.** **Policy pack in v1: INCLUDED. Host-enforced
   `machine: "aws-only"`: YES — first enforced-chip poppy.** All §11 questions decided;
-  the design is complete. Next: phase 0 de-risk, then the full build in its own session.
+  the design is complete.
+- 🚧 **Phase 0 de-risk RUNNING unattended** (started 2026-09-02, sandbox REDACTED-ACCOUNT-ID /
+  eu-west-1, profile `REDACTED-PROFILE`, log: `phase0-derisk.md`). Config + Security Hub
+  are deliberately LEFT ENABLED to measure a week of real costs. **Do NOT disable, modify
+  or tear down anything in the sandbox** — a scheduled task tears it down on 2026-09-09 and
+  a dead-man check re-verifies on 2026-09-20. The sandbox's REAL findings are available now
+  for testing the gap report (read-only).
+- ▶️ **NEXT: the build, in this session.** Order (DESIGN §12 + the 2026-09-02 plan):
+  (1) scaffold — manifest (wide-read/narrow-write grants with reasons, network
+  {egress aws-only, machine aws-only}, its own compliance block), frontend/backend
+  skeletons, pack pipeline, copied from the proven poppy patterns (traffic-poppy is the
+  closest reference); (2) readiness scan + gap report — the repo-owned SOC 2↔CIS/FSBP
+  mapping table + renderer, tested read-only against the sandbox's real findings;
+  (3) the stack — evidence bucket + snapshot Lambda + enable flows carrying the phase-0
+  lessons (Config before standards; warming-up states; typed SDK requests, never
+  string-built ARNs; free-trial end date + off switch on every toggle); (4) policy pack +
+  auditor export + watermark; (5) licensing — entitlement checks, the under-10 registration
+  + admin grant on agentspoppy-web, the $499/yr product in the commerce db (NEVER hardcode
+  a price); (6) listing — mechanical review (needs the compliance block), catalogue entry,
+  and verify it genuinely earns the first Host-enforced machine chip.
 - Next: phase 0 de-risk (DESIGN §12) — live-enable Config/Security Hub/Audit Manager in a
   throwaway account, measure real costs for a week, verify teardown semantics.
