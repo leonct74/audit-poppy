@@ -193,14 +193,35 @@ evidence* is disqualifying to exactly the reader it reaches. The gate sits preci
 in-app screens are never watermarked, only the exported documents. The watermark is also an
 ad (the Canva effect): every unlicensed export markets the product to an auditor.
 
-Rules: the license terms state the personal/business line in plain words in the listing and
-in-app; the paid entitlement (AgentsPoppy first-party checkout, `kind=subscription`, per AWS
-account) removes the watermark and grants the business license; **no other behavioural
-difference** — a licensed and unlicensed install are otherwise identical, which keeps the
-build simple and the evaluation honest. No technical anti-tamper: the code is source-
-available, a determined user can strip a watermark, and the enforcement is the license terms
-plus the professional context — build no DRM. Cancellation via the built-in billing portal
-like every first-party product.
+**The small-company tier (founder, 2026-09-02):** companies **under 10 employees get the
+business license free — but they must register on the AgentsPoppy website and say who they
+are**, and the license is granted to that identity. The founder's rationale, verbatim: *"so
+at least we know who is using it."* This is the JetBrains-startup / Docker-under-250 pattern,
+and it makes the free tier the lead pipeline: small companies grow into paying customers,
+and we know them by name from day one. Mechanics: self-declared headcount attestation at
+registration (honor system, like Docker's employee line — the license terms make a false
+attestation a license violation, no verification bureaucracy); grant is **manual at first**
+(founder approves from the admin panel — the MailPoppy domain-comp precedent), automatable
+later; **recommended: the grant renews annually** with a re-attestation, so the "under 10"
+claim stays current as companies grow.
+
+So the ladder, complete — and the watermark removal is the carrot at each step:
+
+| Tier | Cost | Registration | Exports |
+|---|---|---|---|
+| Personal use / evaluation | free | none | watermarked |
+| Company under 10 employees | free | **required — identity known, license granted** | clean |
+| Company of 10+ | paid (§11.2) | account (checkout) | clean |
+
+Rules: the license terms state all three lines in plain words in the listing and in-app; the
+paid entitlement (AgentsPoppy first-party checkout, `kind=subscription`, per AWS account) and
+the granted small-company entitlement both remove the watermark; **no other behavioural
+difference** — every install is otherwise identical, which keeps the build simple and the
+evaluation honest. No technical anti-tamper: the code is source-available, a determined user
+can strip a watermark, and the enforcement is the license terms plus the professional
+context — build no DRM. Cancellation via the built-in billing portal like every first-party
+product. Web-side work item: a small registration/request form + admin grant flow, reusing
+the existing AgentsPoppy account and entitlement plumbing.
 
 **Price (still open, §11):** recommendation **~$499/yr** per AWS account. Compliance budgets
 are the richest in software; at $499/yr it undercuts Vanta ~95% while still reading as a
@@ -230,6 +251,7 @@ serious product — $14.99 would cost credibility, not gain adoption.
 | Teardown deleting evidence a user needs | export-first flow + type-to-confirm + "found enabled, not ours" ledger semantics (§3) |
 | Mapping drift as AWS renames checks | versioned mapping table + a sync test against the live standards list |
 | Business use that never exports (free-riding on the personal tier) | the license line is USE-based ("business use requires a license"), not export-based — the watermark is the enforcement moment, not the definition; §8 |
+| Headcount self-declared ("under 10") | attestation in the license terms (false = violation) + annual renewal/re-attestation + manual grant sees who is asking; §8 |
 
 ## 11. Open questions for the founder
 
@@ -241,10 +263,12 @@ serious product — $14.99 would cost credibility, not gain adoption.
    **"AuditPoppy — SOC 2 audit-readiness in your own AWS"** — which is also what search
    matches. Manifest id: `com.auditpoppy.desktop`.
 2. **Pricing** — accept the $499/yr recommendation, or position higher ($999/yr)?
-3. **Licensing model — DECIDED (founder, 2026-09-02): personal-free / business-paid with
-   watermarked exports in the unlicensed version.** No feature-gated freemium. Full rules
-   in §8, including the recommended watermark wording ("…not licensed for business use")
-   and the no-DRM rule.
+3. **Licensing model — DECIDED (founder, 2026-09-02): three tiers.** Personal/evaluation
+   free with watermarked exports; **companies under 10 employees free with mandatory
+   registration on the AgentsPoppy website** (identity known, license granted, clean
+   exports); 10+ employees paid. No feature-gated freemium. Full rules in §8, including
+   the recommended watermark wording ("…not licensed for business use"), the annual
+   re-attestation recommendation, and the no-DRM rule.
 4. **Policy pack in v1** — include (recommended; it is half the perceived value) or defer?
 5. **The Host-enforced machine declaration** — agree AuditPoppy should be the first
    poppy to wear the enforced chip (worth sequencing work for)?
