@@ -100,3 +100,17 @@ per standard subscription. Pair with `get-findings` (per-control results) and
    `delete-configuration-recorder` → empty+delete the bucket →
    `iam delete-service-linked-role` (AWSServiceRoleForConfig). Then re-run the baseline
    probes and require the exact baseline answers back.
+
+## Scheduled removal — nothing depends on memory (2026-09-02)
+
+Two scheduled tasks exist in the founder's Claude app (Scheduled section in the sidebar):
+
+1. **`auditpoppy-phase0-teardown`** — fires **2026-09-09 09:00**: cost readout, findings
+   probe, full teardown, baseline verification, log + design update.
+2. **`auditpoppy-sandbox-deadman-check`** — fires **2026-09-20 09:00**: independent
+   verification that the sandbox is at baseline; if anything is still enabled (the 09-09
+   task failed or never ran), it tears it down itself and reports.
+
+Security Hub's free trial ends ~2026-10-02, so the dead-man check leaves 12 days of slack.
+Scheduled tasks run when the app is open (an overdue task fires on next launch) — with the
+app in daily use, both windows are safe by weeks.
