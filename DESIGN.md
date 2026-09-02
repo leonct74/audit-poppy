@@ -172,15 +172,39 @@ pricing as of design time — re-verify at implementation and print live numbers
 Rule inherited from AGENTS.md §9 ("show the money"): no service is enabled silently, the
 estimate is shown next to the toggle, and the Costs screen shows the actuals afterwards.
 
-## 8. Pricing (founder decision — recommendation recorded)
+## 8. Licensing & pricing model — DECIDED (founder, 2026-09-02): personal-free, business-paid
 
-Sold through the AgentsPoppy first-party checkout (`kind=subscription`, per AWS account).
-Recommendation: **free readiness scan + gap report** (the demo and the lead magnet, and it
-makes the "is this real?" evaluation free), **paid tier ~$49.99/mo or $499/yr** for
-continuous evidence, the policy pack and the auditor export. Rationale: compliance budgets
+**No feature-gated freemium split.** The whole product is free — every feature, no tier
+gating in code — **for personal use, evaluation and testing**. A paid license is required
+for **business use**: the moment a company uses the outputs externally (hands an export to
+its auditor, answers a customer's vendor-risk request with it). The founder's enforcement
+logic, verbatim: *"enterprise won't risk to have unlicensed software running in their
+environment"* — the Docker-Desktop model, social/legal enforcement, not DRM.
+
+**The watermark is the mechanism that makes it self-enforcing.** In the unlicensed version,
+every page of every generated document — the auditor export, the policy pack, the gap-report
+PDF — carries a watermark (founder's wording as the base: *"made with Olly Digital — for
+personal use"*; recommended final form names the product and the disqualifier:
+**"AuditPoppy by Olly Digital — for personal use only, not licensed for business use"**).
+This is unusually strong in THIS product: the export's entire purpose is to be handed to an
+external party, and a "not licensed for business use" mark inside a company's *compliance
+evidence* is disqualifying to exactly the reader it reaches. The gate sits precisely on the
+"producing it externally" line, while evaluation stays fully functional and pleasant — the
+in-app screens are never watermarked, only the exported documents. The watermark is also an
+ad (the Canva effect): every unlicensed export markets the product to an auditor.
+
+Rules: the license terms state the personal/business line in plain words in the listing and
+in-app; the paid entitlement (AgentsPoppy first-party checkout, `kind=subscription`, per AWS
+account) removes the watermark and grants the business license; **no other behavioural
+difference** — a licensed and unlicensed install are otherwise identical, which keeps the
+build simple and the evaluation honest. No technical anti-tamper: the code is source-
+available, a determined user can strip a watermark, and the enforcement is the license terms
+plus the professional context — build no DRM. Cancellation via the built-in billing portal
+like every first-party product.
+
+**Price (still open, §11):** recommendation **~$499/yr** per AWS account. Compliance budgets
 are the richest in software; at $499/yr it undercuts Vanta ~95% while still reading as a
-serious product — $14.99 would cost credibility, not gain adoption. Cancellation via the
-built-in billing portal like every first-party product.
+serious product — $14.99 would cost credibility, not gain adoption.
 
 ## 9. Non-goals (v1) — say no in the design so the copy never overclaims
 
@@ -205,6 +229,7 @@ built-in billing portal like every first-party product.
 | Policy pack read as legal advice | "guidance, not legal advice" framing on every generated doc |
 | Teardown deleting evidence a user needs | export-first flow + type-to-confirm + "found enabled, not ours" ledger semantics (§3) |
 | Mapping drift as AWS renames checks | versioned mapping table + a sync test against the live standards list |
+| Business use that never exports (free-riding on the personal tier) | the license line is USE-based ("business use requires a license"), not export-based — the watermark is the enforcement moment, not the definition; §8 |
 
 ## 11. Open questions for the founder
 
@@ -216,7 +241,10 @@ built-in billing portal like every first-party product.
    **"AuditPoppy — SOC 2 audit-readiness in your own AWS"** — which is also what search
    matches. Manifest id: `com.auditpoppy.desktop`.
 2. **Pricing** — accept the $499/yr recommendation, or position higher ($999/yr)?
-3. **Freemium split** — free gap report (recommended) vs. fully paid?
+3. **Licensing model — DECIDED (founder, 2026-09-02): personal-free / business-paid with
+   watermarked exports in the unlicensed version.** No feature-gated freemium. Full rules
+   in §8, including the recommended watermark wording ("…not licensed for business use")
+   and the no-DRM rule.
 4. **Policy pack in v1** — include (recommended; it is half the perceived value) or defer?
 5. **The Host-enforced machine declaration** — agree AuditPoppy should be the first
    poppy to wear the enforced chip (worth sequencing work for)?
