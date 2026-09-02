@@ -28,7 +28,7 @@ anti-Vanta wedge: *compliance evidence that never leaves your cloud.*
   `com.auditpoppy.desktop`; tagline carries "SOC 2", the name never does — §11.1).
   **Licensing DECIDED: three tiers — personal free (watermarked exports); under-10-employee
   companies free with mandatory AgentsPoppy registration (identity known, granted license,
-  clean exports); 10+ paid. No DRM** (§8). Awaiting founder answers to the remaining §11 questions:
-  price amount, policy pack in v1, Host-enforced machine declaration.
+  clean exports); 10+ paid. No DRM** (§8). **Price DECIDED: $499/yr.** Awaiting founder answers to the remaining §11
+  questions: policy pack in v1, Host-enforced machine declaration.
 - Next: phase 0 de-risk (DESIGN §12) — live-enable Config/Security Hub/Audit Manager in a
   throwaway account, measure real costs for a week, verify teardown semantics.

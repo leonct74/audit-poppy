@@ -223,7 +223,8 @@ context — build no DRM. Cancellation via the built-in billing portal like ever
 product. Web-side work item: a small registration/request form + admin grant flow, reusing
 the existing AgentsPoppy account and entitlement plumbing.
 
-**Price (still open, §11):** recommendation **~$499/yr** per AWS account. Compliance budgets
+**Price — DECIDED (founder, 2026-09-02): $499/yr** per AWS account ("499 is fine"),
+via the AgentsPoppy first-party checkout. Rationale kept for the record: compliance budgets
 are the richest in software; at $499/yr it undercuts Vanta ~95% while still reading as a
 serious product — $14.99 would cost credibility, not gain adoption.
 
@@ -262,7 +263,7 @@ serious product — $14.99 would cost credibility, not gain adoption.
    as "SOC 2 in a box" to a skeptical buyer. The explicitness lives in the tagline instead:
    **"AuditPoppy — SOC 2 audit-readiness in your own AWS"** — which is also what search
    matches. Manifest id: `com.auditpoppy.desktop`.
-2. **Pricing** — accept the $499/yr recommendation, or position higher ($999/yr)?
+2. **Pricing — DECIDED (founder, 2026-09-02): $499/yr** per AWS account (§8).
 3. **Licensing model — DECIDED (founder, 2026-09-02): three tiers.** Personal/evaluation
    free with watermarked exports; **companies under 10 employees free with mandatory
    registration on the AgentsPoppy website** (identity known, license granted, clean
