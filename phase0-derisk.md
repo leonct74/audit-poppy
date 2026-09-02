@@ -52,6 +52,22 @@ generate — the poppy's readiness scan must show a "checks are warming up" stat
 empty report). A newer CIS (v3.0) can be added via `batch-enable-standards` later; the
 mapping table decides which standard versions v1 pins.
 
+## Finding 4: enable ORDER matters — Config first, then Security Hub standards
+
+With Config not yet recording, both enabled standards sit at `StandardsStatus: INCOMPLETE`
+(Security Hub's Config-backed controls cannot enable without a recorder). The poppy's
+enable flow must run **Config → wait recording → Security Hub standards**, and the UI must
+render `INCOMPLETE`/`PENDING` as "checks are warming up", never as failure or as an empty
+(= falsely clean) report.
+
+## Finding 5: the gap report's read path, verified
+
+`describe-standards-controls` returns exactly the gap report's input per control —
+`ControlId`, `ControlStatus`, `SeverityRating`, `Title` (e.g. `ACM.2 ENABLED HIGH "RSA
+certificates managed by ACM should use a key length of at least 2,048 bits"`) — paginated,
+per standard subscription. Pair with `get-findings` (per-control results) and
+`describe-compliance-by-config-rule` once checks have run.
+
 ## Enabled in the sandbox (to be measured for a week, then torn down)
 
 | Resource | Id / name | Ours? |
