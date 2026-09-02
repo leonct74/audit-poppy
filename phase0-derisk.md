@@ -27,21 +27,32 @@ architecture entirely** (DESIGN §1.2/§2.2/§5 updated the same day): the snaps
 THE evidence collector, and the SOC 2 ↔ check mapping is fully repo-owned. Had we built
 first and de-risked later, this would have been discovered in a customer's account.
 
-## Finding 2: Config's fresh service-linked role validates with minutes of lag
+## Finding 2 (CORRECTED): the InvalidRoleException meant exactly what it said
 
+First written up as "Config validates a fresh SLR with minutes of lag — retry with
+backoff". **That was wrong.** The real cause: the recorder JSON was generated in a **zsh
+heredoc**, where `$ACCT:role` triggers zsh's `:r` history modifier — it silently ate the
+`:r`, producing `arn:aws:iam::REDACTED-ACCOUNT-IDole/…`. Config rejected a genuinely malformed
+ARN for 40 minutes while I theorized about propagation. With the ARN correct,
+`put-configuration-recorder` succeeded **instantly, first try — no SLR lag was observed
+at all** (SLR created 09:26, correct call succeeded 10:12, but a correct call was never
+made earlier, so no lag claim can be based on this run).
+
+Lessons that DO survive:
+- **Read the payload before theorizing.** "The role arn passed is not valid" was a
+  precise, honest error; 40 minutes of backoff engineering answered a bug that a single
+  `cat recorder.json` would have shown.
+- Never build AWS ARNs through shell string interpolation in the poppy; the sidecar
+  builds requests as typed SDK objects, which makes this class of corruption impossible.
 - The delivery-channel S3 bucket needs the three-statement bucket policy
   (PermissionsCheck `GetBucketAcl` + ExistenceCheck `ListBucket` + Delivery `PutObject`
-  with `bucket-owner-full-control`, all pinned to `AWS:SourceAccount`).
-- `iam create-service-linked-role --aws-service-name config.amazonaws.com` returns
-  immediately, `iam get-role` sees it immediately, `simulate-principal-policy` says
-  PassRole is allowed — and `put-configuration-recorder` still throws
-  `InvalidRoleException: The role arn passed is not valid` for **minutes** afterwards.
-  Not IAM propagation in the usual sense: Config's own validation lags the SLR.
-  **The poppy's enable flow must retry with backoff (≥4 min budget), never fail on the
-  first InvalidRoleException.**
-- CLI gotcha: shorthand syntax can't express the recorder's nested booleans
-  (`recordingGroup={allSupported=true}` arrives as strings) — use a JSON payload; the SDK
-  equivalent is unaffected.
+  with `bucket-owner-full-control`, all pinned to `AWS:SourceAccount`). That part was
+  correct and worked unchanged.
+- CLI gotcha (still true): shorthand syntax can't express the recorder's nested booleans —
+  use a JSON payload; the typed SDK is unaffected.
+
+Config recorder + delivery channel + `start-configuration-recorder` → `recording: true`
+(2026-09-02 10:12 CEST).
 
 ## Finding 3: Security Hub enables cleanly, with tags, defaults = CIS 1.2.0 + FSBP 1.0.0
 

@@ -137,8 +137,9 @@ AuditPoppy needs to *see everything* (that is the product) and *change almost no
   its table, and the service-enablement actions (`config:Put*`, `securityhub:Enable*`/
   `BatchEnableStandards`), all attribution-tagged where AWS allows. Phase 0 note: enabling
   Config needs `iam:CreateServiceLinkedRole` (config.amazonaws.com) + `iam:PassRole` on the
-  SLR, and Config validates a fresh SLR with **minutes of lag** — the enable flow must
-  retry with backoff, not fail.
+  SLR — which validated immediately in phase 0 (an earlier "SLR lag" reading was a
+  malformed-ARN bug on our side, phase0-derisk.md finding 2). Build requests as typed SDK
+  objects, never interpolated strings.
 - The permission screen already presents this honestly ("N of M confined; the wide ones are
   read-only") and the risk rating will be what it is — the listing copy explains *why* wide
   read is the product, in the approval-preview `reason`s, not by fighting the rating.
