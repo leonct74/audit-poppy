@@ -5,7 +5,13 @@
  * reads it live from the commerce catalogue.
  */
 import { useEffect, useState } from "react";
-import { BUSINESS_PRODUCT_ID, LICENSE_LINE, LICENSE_TIERS, SMALL_COMPANY_REGISTRATION_URL } from "@auditpoppy/core";
+import {
+  BUSINESS_PRODUCT_ID,
+  EVALUATION_LINE,
+  LICENSE_LINE,
+  LICENSE_TIERS,
+  SMALL_COMPANY_REGISTRATION_URL,
+} from "@auditpoppy/core";
 import { api } from "../lib/api";
 import { downloadUrl, host, type PurchaseInfo } from "../lib/host";
 import { Banner, friendlyError, PendingButton } from "../ui";
@@ -37,7 +43,7 @@ function BuyButton(props: { onChanged: () => void }) {
         if (res.owned) props.onChanged();
       }}
     >
-      Buy the business license{info.price ? ` — ${formatPrice(info.price)}` : ""}
+      Subscribe to remove the watermark{info.price ? ` — ${formatPrice(info.price)}` : ""}
     </PendingButton>
   );
 }
@@ -50,9 +56,12 @@ function LicensePanel(props: { licensed: boolean | null; onChanged: () => void }
         {props.licensed === null ? null : props.licensed ? (
           <span className="chip ok">Business license active — exports are clean</span>
         ) : (
-          <span className="chip">Personal use — exports carry a watermark</span>
+          <span className="chip">No license yet — exports carry a watermark</span>
         )}
       </div>
+      <p className="small" style={{ marginTop: 0 }}>
+        <strong>{EVALUATION_LINE}</strong>
+      </p>
       <p className="small muted2">{LICENSE_LINE}</p>
       <table className="tier-table">
         <thead>
@@ -82,7 +91,7 @@ function LicensePanel(props: { licensed: boolean | null; onChanged: () => void }
           className="btn btn-sm"
           onClick={() => void host.openExternal(SMALL_COMPANY_REGISTRATION_URL)}
         >
-          Under 10 employees? Register for the free business license
+          Up to 10 people? Sign up to remove the watermark
         </button>
         {props.licensed ? (
           <button
@@ -168,9 +177,9 @@ export function ExportView() {
         </p>
         {licensed === false ? (
           <Banner kind="info">
-            Exports on the free personal tier carry a watermark on every page: "not licensed for business
-            use". Evaluating is exactly what the tier is for — handing the export to your auditor is business
-            use, which the license above covers (free under 10 employees, with registration).
+            Build it now — you have full access. Every page will carry a watermark saying the document is not
+            licensed for business use, so use it to judge the product; take the watermark off above before you
+            hand anything to an auditor.
           </Banner>
         ) : null}
         {error ? <Banner kind="danger">{error}</Banner> : null}
@@ -196,7 +205,7 @@ export function ExportView() {
           {built ? (
             <span className="small muted2">
               Built {new Date(built.generatedAt).toLocaleString()}
-              {built.watermarked ? " — watermarked (personal use)" : " — clean"}
+              {built.watermarked ? " — watermarked (no license yet)" : " — clean"}
             </span>
           ) : null}
         </div>

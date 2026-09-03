@@ -20,34 +20,40 @@ export const SMALL_COMPANY_REGISTRATION_URL = "https://agentspoppy.com/auditpopp
  */
 export const WATERMARK_TEXT = "AuditPoppy by Olly Digital — for personal use only, not licensed for business use";
 
-/** The three tiers, in plain words (shown in-app and in the listing). */
+/**
+ * The ladder, in three lines (founder, 2026-09-03): full access for everyone
+ * with a watermark; individuals and companies up to 10 people take the
+ * watermark off by signing up; above 10 people, by subscribing.
+ *
+ * The first row is deliberately NOT named "personal": it is where every
+ * evaluation starts, a 500-person prospect included, and naming it after the
+ * smallest user of it told an enterprise either "not for us" or "we are
+ * already in breach".
+ */
 export const LICENSE_TIERS = [
   {
-    id: "personal",
-    name: "Personal use & evaluation",
+    id: "everyone",
+    name: "Everyone",
     cost: "Free",
-    registration: "None",
+    registration: "Nothing to do",
     exports: "Watermarked",
-    detail:
-      "Every feature, no time limit. Exported documents carry a personal-use watermark.",
+    detail: "Full access to every feature, at any company size, with no time limit.",
   },
   {
     id: "small-company",
-    name: "Company under 10 employees",
+    name: "Individuals & companies up to 10 people",
     cost: "Free",
-    registration: "Required — register on the AgentsPoppy website so we know who you are",
+    registration: "Sign up",
     exports: "Clean",
-    detail:
-      "The business license is granted free to registered companies under 10 employees. Headcount is self-declared and re-attested annually; a false attestation is a license violation.",
+    detail: "Sign up on the AgentsPoppy website and the watermark comes off. Headcount is self-declared, re-attested each year.",
   },
   {
     id: "business",
-    name: "Company of 10 or more",
-    cost: "Paid, per AWS account",
-    registration: "AgentsPoppy account (checkout)",
+    name: "Companies of more than 10 people",
+    cost: "Subscription, per AWS account",
+    registration: "Checkout",
     exports: "Clean",
-    detail:
-      "A yearly subscription through AgentsPoppy checkout. Cancel any time from the billing portal.",
+    detail: "Subscribe and the watermark comes off. Cancel any time from the billing portal.",
   },
 ] as const;
 
@@ -59,6 +65,10 @@ export function exportsWatermarked(licensed: boolean): boolean {
   return !licensed;
 }
 
-/** The line the license terms state, USE-based (risk register: free-riding). */
+/** The whole model, in one sentence — the headline of the Export screen. */
+export const EVALUATION_LINE =
+  "Full access for everyone, free. Exported documents carry a watermark until you take it off — by signing up (up to 10 people) or subscribing (more than 10).";
+
+/** The small print under it: USE-based (risk register: free-riding). */
 export const LICENSE_LINE =
-  "Business use requires a license. Using AuditPoppy's outputs externally — handing an export to your auditor, answering a customer's vendor-risk request — is business use.";
+  "Business use requires a license — handing an export to your auditor, or answering a customer's security questionnaire with it, is business use.";

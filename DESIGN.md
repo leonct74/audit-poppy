@@ -226,9 +226,19 @@ So the ladder, complete — and the watermark removal is the carrot at each step
 
 | Tier | Cost | Registration | Exports |
 |---|---|---|---|
-| Personal use / evaluation | free | none | watermarked |
-| Company under 10 employees | free | **required — identity known, license granted** | clean |
-| Company of 10+ | paid (§11.2) | account (checkout) | clean |
+| **Everyone** — full access, any company size | free | none | watermarked |
+| Individuals & companies up to 10 people | free | **sign up — identity known, license granted** | clean |
+| Companies of more than 10 people | paid (§11.2) | account (checkout) | clean |
+
+**The first row is the enterprise's evaluation path, and it must be NAMED that way
+(founder review, 2026-09-03).** The ladder was first written with "Personal use /
+evaluation" on top; a prospect of 200 people reading that concludes either "this is not
+for us" or "we are already in breach", and never reaches the value. There is no size
+limit on the free row — full access to every feature, at any size, with no time limit —
+so the row is named for what someone is DOING, not for how big they are, and the whole
+model is stated in one sentence above the table: *full access for everyone, free;
+exported documents carry a watermark until you take it off — by signing up (up to 10
+people) or subscribing (more than 10)*. Pinned in `packages/core/src/licensing.test.ts`.
 
 Rules: the license terms state all three lines in plain words in the listing and in-app; the
 paid entitlement (AgentsPoppy first-party checkout, `kind=subscription`, per AWS account) and
