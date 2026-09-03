@@ -11,8 +11,40 @@
 /** The paid entitlement's product id in the AgentsPoppy commerce catalogue. */
 export const BUSINESS_PRODUCT_ID = "auditpoppy-business";
 
-/** Where a small company (under 10 employees) registers for the free grant. */
+/** Where a small company registers for the free licence. */
 export const SMALL_COMPANY_REGISTRATION_URL = "https://agentspoppy.com/auditpoppy/small-company-license";
+
+/** This poppy's id, as the platform's commerce plane knows it. */
+export const POPPY_ID = "com.auditpoppy.desktop";
+
+/** The platform origin the TAB may call (the Feedback tab already does — exempt by contract). */
+export const PLATFORM_ORIGIN = "https://agentspoppy.com";
+
+/**
+ * The signup URL with the cloud account prefilled, so nobody has to copy an id by hand.
+ */
+export function registrationUrlFor(cloudAccountId: string | null | undefined): string {
+  return cloudAccountId ? `${SMALL_COMPANY_REGISTRATION_URL}?account=${encodeURIComponent(cloudAccountId)}` : SMALL_COMPANY_REGISTRATION_URL;
+}
+
+/**
+ * Where the app asks "is this CLOUD ACCOUNT licensed?" — the platform's cross-install
+ * entitlement lookup, keyed by `target` rather than by the anonymous per-install buyer id.
+ *
+ * This is what makes a granted licence durable. The host's own `isPurchased` always sends the
+ * install's buyerId, which lives in local storage: reinstall AgentsPoppy or AuditPoppy and that
+ * id is regenerated, so an install-keyed licence would silently lapse and the watermark would
+ * come back with no explanation. The account id doesn't move — and it is what the paid tier is
+ * priced per anyway.
+ */
+export function accountEntitlementUrl(cloudAccountId: string, origin = PLATFORM_ORIGIN): string {
+  const params = new URLSearchParams({
+    poppyId: POPPY_ID,
+    productId: BUSINESS_PRODUCT_ID,
+    target: cloudAccountId,
+  });
+  return `${origin}/api/entitlement?${params.toString()}`;
+}
 
 /**
  * The watermark every page of every exported document carries when unlicensed

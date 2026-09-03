@@ -82,7 +82,7 @@ export default function App() {
           {tab === "Readiness" ? <ReadinessView status={status} refreshStatus={refreshStatus} /> : null}
           {tab === "Evidence" ? <EvidenceView status={status} refreshStatus={refreshStatus} /> : null}
           {tab === "Policies" ? <PoliciesView /> : null}
-          {tab === "Export" ? <ExportView /> : null}
+          {tab === "Export" ? <ExportView accountId={status.account} /> : null}
           {tab === "Costs" ? <CostsView status={status} refreshStatus={refreshStatus} /> : null}
         </>
       ) : null}

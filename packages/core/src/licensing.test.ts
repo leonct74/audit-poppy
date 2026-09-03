@@ -6,7 +6,18 @@
  * "we are already in breach".)
  */
 import { describe, expect, it } from "vitest";
-import { EVALUATION_LINE, LICENSE_LINE, LICENSE_TIERS, WATERMARK_TEXT, exportsWatermarked } from "./licensing";
+import {
+  accountEntitlementUrl,
+  BUSINESS_PRODUCT_ID,
+  EVALUATION_LINE,
+  LICENSE_LINE,
+  LICENSE_TIERS,
+  POPPY_ID,
+  registrationUrlFor,
+  SMALL_COMPANY_REGISTRATION_URL,
+  WATERMARK_TEXT,
+  exportsWatermarked,
+} from "./licensing";
 import { checkCopy } from "./naming";
 
 describe("the licence ladder — three lines, and the first is for everyone", () => {
@@ -50,5 +61,23 @@ describe("the licence ladder — three lines, and the first is for everyone", ()
       expect(checkCopy(`${tier.name} ${tier.cost} ${tier.registration} ${tier.detail}`), tier.id).toEqual([]);
     }
     expect(checkCopy(`${LICENSE_LINE} ${EVALUATION_LINE}`)).toEqual([]);
+  });
+});
+
+describe("where a licence lives — the reinstall answer", () => {
+  it("checks the CLOUD ACCOUNT, not the install, so a reinstall keeps the licence", () => {
+    const url = new URL(accountEntitlementUrl("111122223333"));
+    expect(url.origin).toBe("https://agentspoppy.com");
+    expect(url.pathname).toBe("/api/entitlement");
+    // `target` is the platform's cross-install key — a buyerId here would be the bug.
+    expect(url.searchParams.get("target")).toBe("111122223333");
+    expect(url.searchParams.get("buyerId")).toBeNull();
+    expect(url.searchParams.get("productId")).toBe(BUSINESS_PRODUCT_ID);
+    expect(url.searchParams.get("poppyId")).toBe(POPPY_ID);
+  });
+
+  it("prefills the signup with the account, so nobody retypes an id", () => {
+    expect(registrationUrlFor("111122223333")).toBe(`${SMALL_COMPANY_REGISTRATION_URL}?account=111122223333`);
+    expect(registrationUrlFor(null)).toBe(SMALL_COMPANY_REGISTRATION_URL);
   });
 });

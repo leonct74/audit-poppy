@@ -4,13 +4,14 @@
  * documents; the price is never in this code — the standard purchase button
  * reads it live from the commerce catalogue.
  */
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
+  accountEntitlementUrl,
   BUSINESS_PRODUCT_ID,
   EVALUATION_LINE,
   LICENSE_LINE,
   LICENSE_TIERS,
-  SMALL_COMPANY_REGISTRATION_URL,
+  registrationUrlFor,
 } from "@auditpoppy/core";
 import { api } from "../lib/api";
 import { downloadUrl, host, type PurchaseInfo } from "../lib/host";
@@ -48,7 +49,7 @@ function BuyButton(props: { onChanged: () => void }) {
   );
 }
 
-function LicensePanel(props: { licensed: boolean | null; onChanged: () => void }) {
+function LicensePanel(props: { licensed: boolean | null; onChanged: () => void; accountId: string | null }) {
   return (
     <div className="card">
       <div className="spread">
@@ -63,6 +64,12 @@ function LicensePanel(props: { licensed: boolean | null; onChanged: () => void }
         <strong>{EVALUATION_LINE}</strong>
       </p>
       <p className="small muted2">{LICENSE_LINE}</p>
+      {props.accountId ? (
+        <p className="small muted">
+          A licence is attached to cloud account <span className="mono">{props.accountId}</span> — not to this
+          computer — so reinstalling AgentsPoppy or AuditPoppy, or moving to another machine, keeps it.
+        </p>
+      ) : null}
       <table className="tier-table">
         <thead>
           <tr>
@@ -89,7 +96,7 @@ function LicensePanel(props: { licensed: boolean | null; onChanged: () => void }
         <button
           type="button"
           className="btn btn-sm"
-          onClick={() => void host.openExternal(SMALL_COMPANY_REGISTRATION_URL)}
+          onClick={() => void host.openExternal(registrationUrlFor(props.accountId))}
         >
           Up to 10 people? Sign up to remove the watermark
         </button>
@@ -107,20 +114,38 @@ function LicensePanel(props: { licensed: boolean | null; onChanged: () => void }
   );
 }
 
-export function ExportView() {
+/**
+ * Is this install licensed? TWO sources, and both matter:
+ *   • the host's own entitlement check — a purchase made from this install;
+ *   • the CLOUD ACCOUNT's standing — the free small-company licence, granted against the
+ *     account so it survives reinstalling AgentsPoppy or AuditPoppy, and a new machine.
+ * Either one clears the watermark. Both fail closed: any error means "not licensed".
+ */
+async function checkLicensed(accountId: string | null): Promise<boolean> {
+  const viaHost = await host.isPurchased(BUSINESS_PRODUCT_ID).catch(() => false);
+  if (viaHost) return true;
+  if (!accountId) return false;
+  try {
+    const res = await fetch(accountEntitlementUrl(accountId));
+    if (!res.ok) return false;
+    const body = (await res.json()) as { entitled?: boolean };
+    return body?.entitled === true;
+  } catch {
+    return false;
+  }
+}
+
+export function ExportView(props: { accountId: string | null }) {
   const [licensed, setLicensed] = useState<boolean | null>(null);
   const [notes, setNotes] = useState<string>("");
   const [notesLoaded, setNotesLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [built, setBuilt] = useState<{ watermarked: boolean; generatedAt: string } | null>(null);
 
-  const refreshLicense = (): void => {
-    host
-      .isPurchased(BUSINESS_PRODUCT_ID)
-      .then(setLicensed)
-      .catch(() => setLicensed(false));
-  };
-  useEffect(refreshLicense, []);
+  const refreshLicense = useCallback((): void => {
+    void checkLicensed(props.accountId).then(setLicensed);
+  }, [props.accountId]);
+  useEffect(refreshLicense, [refreshLicense]);
   useEffect(() => {
     api
       .notes()
@@ -133,7 +158,7 @@ export function ExportView() {
 
   return (
     <>
-      <LicensePanel licensed={licensed} onChanged={refreshLicense} />
+      <LicensePanel licensed={licensed} onChanged={refreshLicense} accountId={props.accountId} />
 
       <div className="card">
         <h2>Notes for your auditor</h2>
