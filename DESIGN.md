@@ -233,8 +233,11 @@ business license free — but they must register on the AgentsPoppy website and 
 are**, and the license is granted to that identity. The founder's rationale, verbatim: *"so
 at least we know who is using it."* This is the JetBrains-startup / Docker-under-250 pattern,
 and it makes the free tier the lead pipeline: small companies grow into paying customers,
-and we know them by name from day one. Mechanics: self-declared headcount attestation at
-registration (honor system, like Docker's employee line — the license terms make a false
+and we know them by name from day one. Mechanics: **the contact email is verified before
+anything happens** (founder, 2026-09-03) — the request reaches neither the review queue nor the
+mailing list until a one-time link is clicked, so nobody can enlist a stranger's address or claim
+a licence for a company whose contact email they merely guessed; then self-declared headcount
+attestation at registration (honor system, like Docker's employee line — the license terms make a false
 attestation a license violation, no verification bureaucracy); grant is **manual at first**
 (founder approves from the admin panel — the MailPoppy domain-comp precedent), automatable
 later; **recommended: the grant renews annually** with a re-attestation, so the "under 10"
@@ -247,6 +250,17 @@ So the ladder, complete — and the watermark removal is the carrot at each step
 | **Everyone** — full access, any company size | free | none | watermarked |
 | Individuals & companies up to 10 people | free | **sign up — identity known, license granted** | clean |
 | Companies of more than 10 people | paid (§11.2) | account (checkout) | clean |
+
+**Where a granted licence LIVES (founder question, 2026-09-03): the cloud account, not the
+install.** The obvious key is the platform's per-install `buyerId` — and it is wrong: it lives in
+the host's local storage, so reinstalling AgentsPoppy or AuditPoppy mints a new one and a licence
+someone was GIVEN would silently lapse, watermark back, no explanation. The grant is therefore
+written against the platform's existing cross-install key (`target`), set to the cloud account id:
+stable, on screen in the poppy's own header, and the unit the paid tier is priced per anyway. The
+poppy clears the watermark on either the host's own check (a purchase from this install) or the
+account's standing, read from the tab — where calling the platform API is exempt from the enforced
+machine gate by contract. A *different* cloud account is a new licence unit, exactly as it would be
+for a subscription. Built in `agentspoppy-web`: the signup, the admin queue, and the lead channel.
 
 **The first row is the enterprise's evaluation path, and it must be NAMED that way
 (founder review, 2026-09-03).** The ladder was first written with "Personal use /
