@@ -4,6 +4,10 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   plugins: [react()],
+  // The host serves the tab from /ext-ui/<id>/…, NOT the origin root — assets
+  // must be referenced relative to index.html or the tab loads an empty page
+  // (root-absolute /assets/… 404s against the broker).
+  base: "./",
   build: { outDir: "dist", sourcemap: false },
   // The node-sidecar workspace lives under this directory but tests with
   // node:test — keep vitest to the frontend's own sources.

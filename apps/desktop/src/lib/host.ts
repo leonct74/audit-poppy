@@ -73,8 +73,15 @@ async function devInvoke<T>(req: BackendInvoke): Promise<T> {
     headers: req.body !== undefined ? { "content-type": "application/json" } : undefined,
     body: req.body !== undefined ? JSON.stringify(req.body) : undefined,
   });
-  const body = (await res.json()) as T & { message?: string };
-  if (!res.ok) throw new Error(body?.message ?? `backend answered ${res.status}`);
+  let body: (T & { message?: string }) | undefined;
+  try {
+    body = (await res.json()) as T & { message?: string };
+  } catch {
+    body = undefined; // a non-JSON answer still gets a calm sentence below
+  }
+  if (!res.ok || body === undefined) {
+    throw new Error(body?.message ?? `The local sidecar isn't answering (HTTP ${res.status}) — is it running on port 8788?`);
+  }
   return body;
 }
 
