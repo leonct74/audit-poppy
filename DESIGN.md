@@ -262,6 +262,20 @@ account's standing, read from the tab — where calling the platform API is exem
 machine gate by contract. A *different* cloud account is a new licence unit, exactly as it would be
 for a subscription. Built in `agentspoppy-web`: the signup, the admin queue, and the lead channel.
 
+**Leaving the list is part of the deal, and it is built (2026-09-03).** Signup asks for marketing
+consent, so the consent is only honest if the exit exists before the first mail goes out. Every
+lead carries its own unsubscribe secret, minted once and never rotated — a re-submit keeps the old
+one, so an opt-out link sitting in a mailbox from months ago still works. `POST
+/api/leads/unsubscribe` is the only thing that can remove an address: **never a GET**, because mail
+scanners, link previewers and corporate security gateways fetch every URL in an email and a
+mutating GET would unsubscribe people who never clicked. The link in a mail therefore lands on
+`/unsubscribe`, which asks; only the button posts. It answers identically for "no such address" and
+"wrong token", so it cannot be used to test who is on the list; a second click is a success, not an
+error. The CSV export carries the per-address link as a column — a list exported without it is a
+list nobody may lawfully mail — and the licence-decision email carries it in the footer, that being
+the one message every signup is guaranteed to receive. An unsubscribe removes the address from the
+mailing list and touches nothing else: the licence on the cloud account stands.
+
 **The first row is the enterprise's evaluation path, and it must be NAMED that way
 (founder review, 2026-09-03).** The ladder was first written with "Personal use /
 evaluation" on top; a prospect of 200 people reading that concludes either "this is not
