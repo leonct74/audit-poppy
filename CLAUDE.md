@@ -13,6 +13,14 @@ SOC 2 **audit-readiness** for the customer's own AWS account, from inside their 
 account — gap report, continuous evidence collection, policy pack, auditor export. The
 anti-Vanta wedge: *compliance evidence that never leaves your cloud.*
 
+## Installing into the local AgentsPoppy (the usual test loop)
+
+From this repo on the founder's machine: `npm install && npm run install:local` — builds
+everything and lays the extension into `~/.agentspoppy/extensions/` (uses the platform's
+dev installer when the agentspoppy repo is at `~/Projects/agentspoppy` or
+`$AGENTSPOPPY_REPO`; otherwise lays out the documented structure itself). Then RELAUNCH
+AgentsPoppy and approve the connection from the AuditPoppy tab.
+
 ## The two laws that bind every word and grant
 
 1. **Naming law (DESIGN §0):** never "SOC 2 compliant/certified" — only a licensed CPA firm

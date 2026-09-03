@@ -34,12 +34,12 @@ npm run gen:manifest                  # regenerate extension.json from permissio
 npm run smoke -w @auditpoppy/desktop-sidecar   # the full loop against a mock AWS (see smoke/run-smoke.mjs for one-time /etc/hosts setup)
 ```
 
-Install into a local AgentsPoppy (from the agentspoppy repo):
+Install into the local AgentsPoppy (builds, then lays the extension into
+`~/.agentspoppy/extensions/`; uses the platform's dev installer when the agentspoppy
+repo is at `~/Projects/agentspoppy` or `$AGENTSPOPPY_REPO`):
 
 ```bash
-node scripts/install-dev-extension.mjs --src <this repo>/apps/desktop \
-  --frontend <this repo>/apps/desktop/dist \
-  --backend <this repo>/apps/desktop/node-sidecar/dist/index.cjs
+npm run install:local     # then RELAUNCH AgentsPoppy and approve the connection
 ```
 
 Developer mode without the host: `npm run dev -w @auditpoppy/desktop-sidecar` (uses your
