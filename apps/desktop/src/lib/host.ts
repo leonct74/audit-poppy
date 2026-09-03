@@ -84,8 +84,15 @@ export const host = {
     inHost ? call("ensureAccess") : Promise.resolve("granted"),
   getConnection: (): Promise<ConnectionLike> => call("getConnection"),
   invokeBackend: <T>(req: BackendInvoke): Promise<T> => (inHost ? call<T>("invokeBackend", req) : devInvoke<T>(req)),
-  openExternal: (url: string): Promise<void> => call("openExternal", url),
-  notify: (n: { title: string; body?: string }): Promise<void> => call("notify", n),
+  // Dev mode runs in a real browser (not the host webview), where window.open
+  // works — so downloads and links stay testable without AgentsPoppy.
+  openExternal: (url: string): Promise<void> => {
+    if (inHost) return call("openExternal", url);
+    window.open(url, "_blank", "noopener");
+    return Promise.resolve();
+  },
+  notify: (n: { title: string; body?: string }): Promise<void> =>
+    inHost ? call("notify", n) : Promise.resolve(console.info(`[notify] ${n.title}`, n.body ?? "")),
   purchaseInfo: (productId: string): Promise<PurchaseInfo> => call("purchaseInfo", productId),
   buyProduct: (productId: string): Promise<{ owned: boolean }> => call("buyProduct", productId),
   isPurchased: (productId: string): Promise<boolean> => (inHost ? call("isPurchased", productId) : Promise.resolve(false)),
@@ -93,7 +100,10 @@ export const host = {
 };
 
 /** The broker serves our tab and downloads from one origin; a one-shot
- *  sidecar download is opened through it in the system browser. */
+ *  sidecar download is opened through it in the system browser. In dev mode
+ *  the Vite proxy reaches the sidecar's route directly. */
 export function downloadUrl(token: string): string {
-  return `${window.location.origin}/ext-dl/com.auditpoppy.desktop/local-download/${token}`;
+  return inHost
+    ? `${window.location.origin}/ext-dl/com.auditpoppy.desktop/local-download/${token}`
+    : `${window.location.origin}/api/local-download/${token}`;
 }
