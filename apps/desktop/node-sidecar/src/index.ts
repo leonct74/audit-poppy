@@ -61,12 +61,38 @@ interface EnableOp {
 }
 let enableOp: EnableOp | null = null;
 
+/**
+ * Config's delivery channel points at the evidence bucket, so the storage
+ * half of the stack must exist BEFORE Config enables (the smoke harness
+ * caught this: phase 0 had created the bucket by hand). Drives the same
+ * resumable advanceDeploy the Evidence screen uses.
+ */
+async function ensureEvidenceStorage(account: string): Promise<void> {
+  const deadline = Date.now() + 180_000;
+  for (;;) {
+    const state = await advanceDeploy(clients, {
+      accountId: account,
+      connectionId: env.bootstrap?.connectionId,
+      permissionsBoundaryArn: env.bootstrap?.permissionsBoundaryArn,
+      lambdaCodeKey,
+      lambdaZip: Buffer.from(lambdaZipBase64, "base64"),
+    });
+    if (state.status === "STORAGE_READY" || state.status === "COMPLETE") return;
+    if (state.status === "FAILED") {
+      throw new Error(`setting up the evidence storage failed${state.statusReason ? `: ${state.statusReason}` : ""}`);
+    }
+    if (Date.now() > deadline) throw new Error("setting up the evidence storage took too long — try again");
+    await new Promise((r) => setTimeout(r, 3000));
+  }
+}
+
 async function startEnable(): Promise<void> {
   if (enableOp && !enableOp.finishedAt && !enableOp.error) return; // already running
   enableOp = { startedAt: new Date().toISOString() };
   try {
     const account = await accountId();
     await captureBaseline(clients, ledgerStore);
+    await ensureEvidenceStorage(account);
     const result = await enableChecks(clients, ledgerStore, {
       accountId: account,
       evidenceBucket: evidenceBucketName(account),

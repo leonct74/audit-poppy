@@ -10,6 +10,8 @@
     "build": "npm run gen:lambda && node scripts/build-backend-bundle.mjs",
     "pretest": "npm run gen:lambda",
     "test": "node --import tsx --test src/*.test.ts",
+    "presmoke": "npm run gen:lambda",
+    "smoke": "node smoke/run-smoke.mjs",
     "pretypecheck": "npm run gen:lambda",
     "typecheck": "tsc --noEmit",
     "dev": "tsx watch src/index.ts"

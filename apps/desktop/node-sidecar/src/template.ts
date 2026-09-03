@@ -90,6 +90,41 @@ export function buildTemplate(): Record<string, unknown> {
                 ],
                 Condition: { Bool: { "aws:SecureTransport": "false" } },
               },
+              // The three statements AWS Config's delivery channel requires
+              // (phase-0 finding 2 — verified live; without them the enable
+              // flow dies on InsufficientDeliveryPolicyException). All pinned
+              // to this account so no other account's Config can write here.
+              {
+                Sid: "AWSConfigBucketPermissionsCheck",
+                Effect: "Allow",
+                Principal: { Service: "config.amazonaws.com" },
+                Action: "s3:GetBucketAcl",
+                Resource: { "Fn::Sub": "arn:${AWS::Partition}:s3:::${EvidenceBucketName}" },
+                Condition: { StringEquals: { "AWS:SourceAccount": { Ref: "AWS::AccountId" } } },
+              },
+              {
+                Sid: "AWSConfigBucketExistenceCheck",
+                Effect: "Allow",
+                Principal: { Service: "config.amazonaws.com" },
+                Action: "s3:ListBucket",
+                Resource: { "Fn::Sub": "arn:${AWS::Partition}:s3:::${EvidenceBucketName}" },
+                Condition: { StringEquals: { "AWS:SourceAccount": { Ref: "AWS::AccountId" } } },
+              },
+              {
+                Sid: "AWSConfigBucketDelivery",
+                Effect: "Allow",
+                Principal: { Service: "config.amazonaws.com" },
+                Action: "s3:PutObject",
+                Resource: {
+                  "Fn::Sub": "arn:${AWS::Partition}:s3:::${EvidenceBucketName}/config/AWSLogs/${AWS::AccountId}/Config/*",
+                },
+                Condition: {
+                  StringEquals: {
+                    "s3:x-amz-acl": "bucket-owner-full-control",
+                    "AWS:SourceAccount": { Ref: "AWS::AccountId" },
+                  },
+                },
+              },
             ],
           },
         },

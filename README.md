@@ -31,6 +31,7 @@ npm test                              # core (vitest) + sidecar (node:test) + fr
 npm run typecheck
 npm run build                         # frontend → apps/desktop/dist, sidecar → node-sidecar/dist/index.cjs
 npm run gen:manifest                  # regenerate extension.json from permissionSet()
+npm run smoke -w @auditpoppy/desktop-sidecar   # the full loop against a mock AWS (see smoke/run-smoke.mjs for one-time /etc/hosts setup)
 ```
 
 Install into a local AgentsPoppy (from the agentspoppy repo):

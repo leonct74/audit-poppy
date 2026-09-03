@@ -30,6 +30,19 @@ describe("the AuditPoppyStack template", () => {
     assert.ok(policy.includes("aws:SecureTransport"));
   });
 
+  it("carries the three Config-delivery statements (phase-0 finding 2), account-pinned", () => {
+    const statements = (
+      resources.EvidenceBucketPolicy?.Properties?.PolicyDocument as { Statement: { Sid?: string }[] }
+    ).Statement;
+    const sids = statements.map((s) => s.Sid);
+    for (const sid of ["AWSConfigBucketPermissionsCheck", "AWSConfigBucketExistenceCheck", "AWSConfigBucketDelivery"]) {
+      assert.ok(sids.includes(sid), `missing ${sid}`);
+    }
+    const text = JSON.stringify(statements);
+    assert.ok(text.includes("bucket-owner-full-control"));
+    assert.ok(text.includes("AWS:SourceAccount"));
+  });
+
   it("phase A: with no code key, only storage deploys (compute is conditional)", () => {
     for (const name of ["SnapshotRole", "SnapshotFunction", "SnapshotLogGroup", "ScheduleRule", "SchedulePermission"]) {
       assert.equal(resources[name]?.Condition, "HasLambdaCode", `${name} must be conditional`);
