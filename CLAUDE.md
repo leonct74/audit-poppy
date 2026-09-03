@@ -21,12 +21,15 @@ dev installer when the agentspoppy repo is at `~/Projects/agentspoppy` or
 `$AGENTSPOPPY_REPO`; otherwise lays out the documented structure itself). Then RELAUNCH
 AgentsPoppy and approve the connection from the AuditPoppy tab.
 
-## The two laws that bind every word and grant
+## The three laws that bind every word and grant
 
 1. **Naming law (DESIGN §0):** never "SOC 2 compliant/certified" — only a licensed CPA firm
    attests. Copy says "audit-ready", "evidence for your SOC 2 audit". Test-pin it like the
    platform dossier does.
-2. **Wide READ, narrow WRITE (DESIGN §4):** reads may be wide but must be enumerated and
+2. **Cloud-neutral rule (DESIGN §0a):** user-facing copy says "cloud", never "AWS" — more
+   clouds follow. Proper nouns stay ("AWS Config", "AWS Security Hub", the CIS benchmark's
+   title) — renaming those makes the product unusable, not neutral. Test-pinned too.
+3. **Wide READ, narrow WRITE (DESIGN §4):** reads may be wide but must be enumerated and
    reasoned; writes only to its own stack/bucket/table + service enablement. **No
    auto-remediation, ever** — a wide-write compliance tool destroys its own trust story.
 

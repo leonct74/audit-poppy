@@ -22,6 +22,23 @@ export const FORBIDDEN_PHRASES: { pattern: RegExp; instead: string }[] = [
   { pattern: /guarantee[sd]?\s+(a\s+)?(passing|successful)\s+audit/i, instead: "nothing — never promise an audit outcome" },
 ];
 
+/**
+ * The cloud-neutral rule (founder, 2026-09-03): user-facing copy says "cloud",
+ * not "AWS". AWS is what v1 checks, and more clouds are coming — copy written
+ * as AWS-only would have to be rewritten everywhere at that moment, and reads
+ * today as a narrower product than it is meant to be.
+ *
+ * PROPER NOUNS ARE EXEMPT and must stay: "AWS Config" and "AWS Security Hub"
+ * are the names a user looks for in their console, and "CIS AWS Foundations
+ * Benchmark" is the standard's actual title. Renaming those would make the
+ * product unusable, not neutral. So this flags only the GENERIC uses.
+ */
+export const CLOUD_NEUTRAL = [
+  { pattern: /\bAWS\s+(root\s+)?(account|access|estate|environment|infrastructure|bill)\b/i, instead: '"cloud account", "cloud estate", … — AWS product names stay' },
+  { pattern: /\bin your own AWS\b/i, instead: '"in your own cloud"' },
+  { pattern: /\bobserved in AWS\b/i, instead: '"observed in the cloud account"' },
+];
+
 /** A dollar amount literal (the pricing law). "$0" alone is allowed. */
 export const HARDCODED_PRICE = /\$\s?\d+(?:[.,]\d+)?/;
 
@@ -39,6 +56,10 @@ export function checkCopy(text: string): CopyViolation[] {
     const m = text.match(pattern);
     if (m) violations.push({ phrase: m[0], instead });
   }
+  for (const { pattern, instead } of CLOUD_NEUTRAL) {
+    const m = text.match(pattern);
+    if (m) violations.push({ phrase: m[0], instead });
+  }
   const priceMatches = text.match(new RegExp(HARDCODED_PRICE.source, "g")) ?? [];
   for (const m of priceMatches) {
     if (!PRICE_ALLOWED.test(m)) {
@@ -53,8 +74,9 @@ export function checkCopy(text: string): CopyViolation[] {
 
 /** The approved register, for reuse in copy so wording stays consistent. */
 export const APPROVED = {
-  productLine: "SOC 2 audit-readiness in your own AWS",
+  productLine: "SOC 2 audit-readiness in your own cloud",
   whatItSells: "evidence for your SOC 2 audit",
   mappedTo: "mapped to the SOC 2 Trust Services Criteria",
+  cloudNoun: "your cloud account",
   policyDisclaimer: "These documents are guidance to adapt to your organization — not legal advice.",
 } as const;

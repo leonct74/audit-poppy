@@ -1,5 +1,5 @@
 /**
- * AuditPoppy — SOC 2 audit-readiness in your own AWS. Five screens + the
+ * AuditPoppy — SOC 2 audit-readiness in your own cloud. Five screens + the
  * mandatory Feedback tab (last). Status is fetched from the sidecar on mount
  * and after every state-changing action, so a remount lands on live truth.
  */
@@ -41,7 +41,7 @@ export default function App() {
         <div>
           <h1>AuditPoppy</h1>
           <div className="sub">
-            SOC 2 audit-readiness in your own AWS
+            SOC 2 audit-readiness in your own cloud
             {status?.account ? (
               <>
                 {" · "}
@@ -73,7 +73,7 @@ export default function App() {
 
       {!status && !error ? (
         <div className="card row">
-          <span className="spinner" /> Connecting to your AWS account…
+          <span className="spinner" /> Connecting to your cloud account…
         </div>
       ) : null}
 

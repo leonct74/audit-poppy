@@ -43,7 +43,7 @@ export interface AuditorExportJson {
 
 /** The honest scope line (DESIGN §1.4) — stated in every export. */
 export const SCOPE_STATEMENT =
-  "This package covers the AWS estate, the written policies, and the evidence workflow. " +
+  "This package covers the cloud estate, the written policies, and the evidence workflow. " +
   "It is evidence for your SOC 2 audit, mapped to the SOC 2 Trust Services Criteria — " +
   "the audit itself, and any opinion on it, comes only from your CPA firm.";
 
@@ -90,7 +90,7 @@ export function buildAuditorExportPdf(json: AuditorExportJson): Uint8Array {
   };
 
   h1("Audit-readiness package", 0);
-  data(`Generated ${json.generatedAt} - AWS account ${json.gapReport.accountId} (${json.gapReport.region})`);
+  data(`Generated ${json.generatedAt} - cloud account ${json.gapReport.accountId} (${json.gapReport.region})`);
   p(json.scopeStatement, 8);
   p(
     "Typography carries the register: regular text is platform-observed fact; italic text was entered by the company; monospace is raw data.",

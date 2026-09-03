@@ -55,10 +55,10 @@ export function permissionSet() {
     id: "auditpoppy-backend",
     name: "AuditPoppy backend",
     description:
-      "Checks your AWS account against the security checks auditors ask about, and keeps the evidence in your own account. " +
+      "Checks your cloud account against the security checks auditors ask about, and keeps the evidence in your own account. " +
       "Its READ access is wide on purpose — reading your setup is the product — but it is read-only: it looks at how things are configured, " +
       "never at the data inside them. Everything it creates or changes is its own: one stack, one evidence bucket, one table, " +
-      "plus turning on the two AWS checking services (with your approval, costs shown first). It never changes the resources it reports on — " +
+      "plus turning on the two checking services your cloud provider offers (with your approval, costs shown first). It never changes the resources it reports on — " +
       "the gap report tells you what to fix; fixing stays in your hands.",
     grants: [
       // ---- The two AWS checking services (the write half of the product) ----
@@ -90,7 +90,7 @@ export function permissionSet() {
         "DescribeStackResources", "ListStackResources", "GetTemplate", "TagResource",
       ], stack),
       grant("cloudformation", ["ValidateTemplate", "GetTemplateSummary"], "*",
-        "Before deploying, asks AWS to double-check its own deployment plan, so a mistake is caught before anything is created in your account."),
+        "Before deploying, asks your cloud provider to double-check its own deployment plan, so a mistake is caught before anything is created in your account."),
       grant("iam", [
         "CreateRole", "DeleteRole", "GetRole", "TagRole", "UntagRole",
         "PutRolePolicy", "DeleteRolePolicy", "GetRolePolicy", "ListRolePolicies",
@@ -132,11 +132,11 @@ export function permissionSet() {
       grant("s3", ["ListAllMyBuckets"], "*",
         "Lists your storage bucket names — to count them for the cost estimate, and to find its own evidence bucket. Names only, never what is inside."),
       grant("cloudtrail", ["DescribeTrails", "GetTrailStatus"], "*",
-        "Checks whether AWS activity logging is turned on, so your incident-response policy states what is actually true."),
+        "Checks whether cloud activity logging is turned on, so your incident-response policy states what is actually true."),
       grant("pricing", ["GetProducts"], "*",
-        "Fetches AWS's current prices so every cost shown to you is live, never a stale built-in number."),
+        "Fetches your cloud provider's current prices so every cost shown to you is live, never a stale built-in number."),
       grant("sts", ["GetCallerIdentity"], "*",
-        "Checks which AWS account it is connected to, so every screen can show where it is about to work."),
+        "Checks which cloud account it is connected to, so every screen can show where it is about to work."),
     ],
     requiredTags: [ACCOUNT_TAG_KEY, APP_TAG_KEY, CONNECTION_TAG_KEY],
     limits: null,

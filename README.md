@@ -1,7 +1,7 @@
 # AuditPoppy
 
-SOC 2 audit-readiness for your own AWS account, from inside your own AWS account — an
-AgentsPoppy extension. Gap report mapped to the SOC 2 Trust Services Criteria, continuous
+SOC 2 audit-readiness for your own cloud account, from inside your own cloud account — an
+AgentsPoppy extension. (v1 checks AWS; the copy is cloud-neutral because more clouds follow.) Gap report mapped to the SOC 2 Trust Services Criteria, continuous
 evidence collection into your own S3, a generated policy pack, and an auditor-ready export.
 No vendor ever sees your security posture: *compliance evidence that never leaves your cloud.*
 

@@ -50,7 +50,7 @@ export const LICENSE_TIERS = [
   {
     id: "business",
     name: "Companies of more than 10 people",
-    cost: "Subscription, per AWS account",
+    cost: "Subscription, per cloud account",
     registration: "Checkout",
     exports: "Clean",
     detail: "Subscribe and the watermark comes off. Cancel any time from the billing portal.",

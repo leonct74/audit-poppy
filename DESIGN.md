@@ -27,6 +27,24 @@ the permission screen: enforced facts may say "enforced"; everything else says w
 The policy-document pack additionally carries "guidance, not legal advice" (the MailPoppy
 AdminPrivacyNotice precedent).
 
+## 0a. The cloud-neutral rule (founder, 2026-09-03)
+
+**User-facing copy says "cloud", never "AWS".** v1 checks AWS accounts, and more clouds
+follow — copy written as AWS-only would have to be rewritten everywhere at that moment,
+and reads today as a narrower product than it is meant to be. So: *your cloud account*,
+*the cloud estate*, *your cloud provider's price list*.
+
+**Proper nouns are exempt and must stay.** "AWS Config" and "AWS Security Hub" are the
+names a user looks for in their own console, and "CIS AWS Foundations Benchmark v1.2.0"
+is the standard's actual title; renaming those would make the product unusable, not
+neutral. The same holds for the remediation text in the mapping table (§5), which names
+real AWS things a user must go and change — when a second cloud lands it gets its own
+mapping table, not a laundered version of this one.
+
+Enforced like the other two laws: `CLOUD_NEUTRAL` in `packages/core/src/naming.ts`, and
+the repo-wide scan in `naming.test.ts`, which strips comments first — the laws bind what
+a user reads, not what developers write to each other.
+
 ## 1. What it is — and the wedge against Vanta
 
 Vanta/Drata/Secureframe sell audit-readiness at **$10k–30k+/year**, and their architecture has

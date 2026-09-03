@@ -47,7 +47,7 @@ let cachedAccountId: string | undefined = env.accountId;
 async function accountId(): Promise<string> {
   if (cachedAccountId) return cachedAccountId;
   const res = (await clients.sts.send(new GetCallerIdentityCommand({}))) as { Account?: string };
-  if (!res.Account) throw new Error("could not resolve the AWS account id");
+  if (!res.Account) throw new Error("could not resolve the cloud account id");
   cachedAccountId = res.Account;
   return cachedAccountId;
 }

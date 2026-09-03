@@ -22,10 +22,10 @@ export function buildHelperPrompt(): string {
     return `- ${t.title} (${t.purpose})\n${fields}`;
   }).join("\n");
 
-  return `You are helping me set up AuditPoppy, an app that gets my AWS account audit-ready for a SOC 2 audit from inside my own AWS account. Plan WITHIN these rules — they are how the app works, not preferences:
+  return `You are helping me set up AuditPoppy, an app that gets my cloud account audit-ready for a SOC 2 audit from inside my own cloud account. Plan WITHIN these rules — they are how the app works, not preferences:
 ${HARD_RULES.map((r) => `- ${r}`).join("\n")}
 
-It can enable these two AWS services (my choice, costs shown first):
+It can enable these two cloud services (my choice, costs shown first):
 ${services}
 
 It also pre-fills these written policies from what it observes; I answer the company-specific fields:

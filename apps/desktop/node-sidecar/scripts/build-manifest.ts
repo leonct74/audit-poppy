@@ -17,7 +17,7 @@ export function buildManifest() {
     name: APP.name,
     version: "0.1.0",
     description:
-      "Get audit-ready for your SOC 2 audit, inside your own AWS account — gap report, continuous evidence collection, policy pack, auditor export. Evidence never leaves your cloud.",
+      "Get audit-ready for your SOC 2 audit, inside your own cloud account — gap report, continuous evidence collection, policy pack, auditor export. Evidence never leaves your cloud.",
     icon: "frontend/auditpoppy-icon.png",
     bugsUrl: "https://github.com/leonct74/audit-poppy/issues",
     permissionSet: permissionSet(),
@@ -31,7 +31,7 @@ export function buildManifest() {
     teardown: { endpoint: "/teardown" },
     compliance: {
       dataHandled:
-        "Security findings, audit evidence and policy documents about your AWS account — stored only in your own AWS account (your evidence bucket and table) and on your machine. The developer receives none of it.",
+        "Security findings, audit evidence and policy documents about your cloud account — stored only in your own cloud account (your evidence bucket and table) and on your machine. The developer receives none of it.",
       subprocessors: [],
       securityContact: "https://github.com/leonct74/audit-poppy/security/advisories/new",
     },

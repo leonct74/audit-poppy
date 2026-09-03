@@ -92,7 +92,7 @@ export const MAPPING: MappedCheck[] = [
     "A root access key is a programmatic super-credential with no owner review path — its existence alone is a finding.",
     "Delete any access key on the root account."),
   cis("CIS.1.13", ["CC6"],
-    "Root without MFA means one password protects the entire account — the highest-impact single control in AWS.",
+    "Root without MFA means one password protects the entire account — the highest-impact single control there is.",
     "Enable MFA on the root account."),
   cis("CIS.1.14", ["CC6"],
     "Hardware MFA on root removes the phishable channel for the account's most powerful identity.",

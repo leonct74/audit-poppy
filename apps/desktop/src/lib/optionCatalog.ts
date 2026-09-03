@@ -16,7 +16,7 @@ export const CHECK_SERVICES: CheckServiceOption[] = [
   {
     id: "config",
     label: "AWS Config — the change record",
-    what: "Records every configuration change in your account: the evidence trail auditors sample, and the base several checks need.",
+    what: "Records every configuration change in your cloud account: the evidence trail auditors sample, and the base several checks need.",
     caution: "Billed per recorded change. It is turned on first — the checks need it running.",
   },
   {

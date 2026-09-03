@@ -48,22 +48,22 @@ export const POLICY_TEMPLATES: PolicyTemplate[] = [
       f("companyName", "Company name", "customer-entered"),
       f("accessApprover", "Who approves access requests", "customer-entered", "The engineering lead"),
       f("reviewCadence", "How often access is reviewed", "customer-entered", "Quarterly"),
-      f("iamUserCount", "IAM users in the AWS account", "platform-observed"),
+      f("iamUserCount", "User accounts in the cloud", "platform-observed"),
       f("usersWithoutMfa", "Console users without MFA", "platform-observed"),
-      f("passwordPolicySummary", "AWS password policy", "platform-observed"),
+      f("passwordPolicySummary", "Cloud password policy", "platform-observed"),
     ],
     sections: [
       {
         heading: "Purpose and scope",
-        body: "This policy defines how {{companyName}} grants, reviews and removes access to systems and data, covering the AWS environment and the tools connected to it.",
+        body: "This policy defines how {{companyName}} grants, reviews and removes access to systems and data, covering the cloud environment and the tools connected to it.",
       },
       {
         heading: "Access provisioning",
-        body: "Access is granted on request, approved by {{accessApprover}}, following least privilege: people get the narrowest access that lets them do their job. Shared accounts are not used; the AWS root account is reserved for tasks only it can perform.",
+        body: "Access is granted on request, approved by {{accessApprover}}, following least privilege: people get the narrowest access that lets them do their job. Shared accounts are not used; the root (owner) account is reserved for tasks only it can perform.",
       },
       {
         heading: "Authentication",
-        body: "Multi-factor authentication is required for console access. Current state, as observed in AWS: {{iamUserCount}} IAM users, of which {{usersWithoutMfa}} lack MFA. The account password policy: {{passwordPolicySummary}}.",
+        body: "Multi-factor authentication is required for console access. Current state, as observed in the cloud account: {{iamUserCount}} user accounts, of which {{usersWithoutMfa}} lack MFA. The account password policy: {{passwordPolicySummary}}.",
       },
       {
         heading: "Access review and offboarding",
@@ -80,7 +80,7 @@ export const POLICY_TEMPLATES: PolicyTemplate[] = [
       f("companyName", "Company name", "customer-entered"),
       f("reviewProcess", "How changes are reviewed", "customer-entered", "Pull-request review by a second engineer"),
       f("deployProcess", "How changes reach production", "customer-entered", "Through the CI pipeline, after tests pass"),
-      f("configRecorderState", "AWS Config change recording", "platform-observed"),
+      f("configRecorderState", "Cloud change recording", "platform-observed"),
     ],
     sections: [
       {
@@ -93,7 +93,7 @@ export const POLICY_TEMPLATES: PolicyTemplate[] = [
       },
       {
         heading: "Infrastructure change record",
-        body: "Changes to AWS infrastructure are recorded continuously: {{configRecorderState}}. This record is retained as audit evidence.",
+        body: "Changes to cloud infrastructure are recorded continuously: {{configRecorderState}}. This record is retained as audit evidence.",
       },
     ],
   },
@@ -106,7 +106,7 @@ export const POLICY_TEMPLATES: PolicyTemplate[] = [
       f("companyName", "Company name", "customer-entered"),
       f("incidentOwner", "Who leads incident response", "customer-entered", "The CTO"),
       f("notifyTargets", "Who is notified, and when customers are informed", "customer-entered", "The founders immediately; affected customers without undue delay"),
-      f("cloudTrailState", "AWS activity logging", "platform-observed"),
+      f("cloudTrailState", "Cloud activity logging", "platform-observed"),
     ],
     sections: [
       {
@@ -115,7 +115,7 @@ export const POLICY_TEMPLATES: PolicyTemplate[] = [
       },
       {
         heading: "Detection",
-        body: "AWS account activity is logged and monitored: {{cloudTrailState}}. Alerts and anomalous findings are triaged by {{incidentOwner}}.",
+        body: "Cloud account activity is logged and monitored: {{cloudTrailState}}. Alerts and anomalous findings are triaged by {{incidentOwner}}.",
       },
       {
         heading: "Response",
@@ -200,14 +200,14 @@ export function observedValues(posture: ObservedPosture): Record<string, string>
     ? "no account password policy is set"
     : `minimum length ${pw.minimumLength ?? "unset"}${pw.requireSymbols ? ", symbols required" : ""}${pw.maxAgeDays ? `, expires after ${pw.maxAgeDays} days` : ""}`;
   const trail = posture.cloudTrailEnabled
-    ? `CloudTrail is enabled${posture.multiRegionTrail ? " in all regions" : " (single region)"}`
-    : "CloudTrail is NOT enabled";
+    ? `activity logging is enabled${posture.multiRegionTrail ? " in all regions" : " (in one region only)"}`
+    : "activity logging is NOT enabled";
   return {
     iamUserCount: posture.iamUserCount === undefined ? "not yet observed" : String(posture.iamUserCount),
     usersWithoutMfa: posture.usersWithoutMfa === undefined ? "not yet observed" : String(posture.usersWithoutMfa),
     passwordPolicySummary: pwSummary,
     cloudTrailState: trail,
-    configRecorderState: "AWS Config records configuration changes in this account (enabled by AuditPoppy)",
+    configRecorderState: "configuration changes in this account are recorded continuously (enabled by AuditPoppy)",
   };
 }
 

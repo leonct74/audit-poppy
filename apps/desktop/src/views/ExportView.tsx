@@ -138,7 +138,7 @@ export function ExportView() {
       <div className="card">
         <h2>Notes for your auditor</h2>
         <p className="small muted2" style={{ marginTop: 0 }}>
-          Anything your auditor should know that AWS can't show — one note per line. These appear in the
+          Anything your auditor should know that your cloud can't show — one note per line. These appear in the
           package clearly marked as written by you.
         </p>
         <div className="field">

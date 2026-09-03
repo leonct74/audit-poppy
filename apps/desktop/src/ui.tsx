@@ -94,7 +94,7 @@ export function TypeToConfirm(props: {
 export function friendlyError(err: unknown): string {
   const msg = err instanceof Error ? err.message : String(err);
   if (/paused|expired|connection/i.test(msg)) {
-    return "Couldn't get AWS access from AgentsPoppy — check AuditPoppy's connection is active in AgentsPoppy, then try again.";
+    return "Couldn't reach your cloud account through AgentsPoppy — check AuditPoppy's connection is active in AgentsPoppy, then try again.";
   }
   return msg;
 }

@@ -42,7 +42,7 @@ function PolicyCard(props: {
       <div className="small muted">{policy.disclaimer}</div>
       {open ? (
         <>
-          <h3>Observed in your AWS account</h3>
+          <h3>Observed in your cloud account</h3>
           <div className="row">
             {observed.map((f) => (
               <span key={f.id} className="chip" title="Read from your account — updates on each scan">

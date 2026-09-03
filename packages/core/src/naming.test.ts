@@ -75,10 +75,19 @@ describe("the repo-wide scan (both laws bind every shipped word)", () => {
     expect(files.length).toBeGreaterThan(5);
   });
 
-  it("finds no forbidden phrase and no hardcoded price in shipped source", () => {
+  /**
+   * The laws bind what a USER reads, not what developers write to each other:
+   * a code comment saying the bootstrap carries "the resolved AWS account" is
+   * accurate and must stay. So comments come out before the scan; strings,
+   * JSX text and markdown stay in.
+   */
+  const stripComments = (text: string): string =>
+    text.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/^\s*\/\/.*$/gm, " ");
+
+  it("finds no forbidden phrase, hardcoded price or AWS-only wording in shipped copy", () => {
     const problems: string[] = [];
     for (const file of files) {
-      const text = readFileSync(file, "utf8");
+      const text = stripComments(readFileSync(file, "utf8"));
       for (const v of checkCopy(text)) {
         problems.push(`${file}: "${v.phrase}" → ${v.instead}`);
       }

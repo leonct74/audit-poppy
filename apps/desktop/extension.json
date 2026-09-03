@@ -2,13 +2,13 @@
   "id": "com.auditpoppy.desktop",
   "name": "AuditPoppy",
   "version": "0.1.0",
-  "description": "Get audit-ready for your SOC 2 audit, inside your own AWS account — gap report, continuous evidence collection, policy pack, auditor export. Evidence never leaves your cloud.",
+  "description": "Get audit-ready for your SOC 2 audit, inside your own cloud account — gap report, continuous evidence collection, policy pack, auditor export. Evidence never leaves your cloud.",
   "icon": "frontend/auditpoppy-icon.png",
   "bugsUrl": "https://github.com/leonct74/audit-poppy/issues",
   "permissionSet": {
     "id": "auditpoppy-backend",
     "name": "AuditPoppy backend",
-    "description": "Checks your AWS account against the security checks auditors ask about, and keeps the evidence in your own account. Its READ access is wide on purpose — reading your setup is the product — but it is read-only: it looks at how things are configured, never at the data inside them. Everything it creates or changes is its own: one stack, one evidence bucket, one table, plus turning on the two AWS checking services (with your approval, costs shown first). It never changes the resources it reports on — the gap report tells you what to fix; fixing stays in your hands.",
+    "description": "Checks your cloud account against the security checks auditors ask about, and keeps the evidence in your own account. Its READ access is wide on purpose — reading your setup is the product — but it is read-only: it looks at how things are configured, never at the data inside them. Everything it creates or changes is its own: one stack, one evidence bucket, one table, plus turning on the two checking services your cloud provider offers (with your approval, costs shown first). It never changes the resources it reports on — the gap report tells you what to fix; fixing stays in your hands.",
     "grants": [
       {
         "service": "securityhub",
@@ -91,7 +91,7 @@
           "GetTemplateSummary"
         ],
         "resourceScope": "*",
-        "reason": "Before deploying, asks AWS to double-check its own deployment plan, so a mistake is caught before anything is created in your account."
+        "reason": "Before deploying, asks your cloud provider to double-check its own deployment plan, so a mistake is caught before anything is created in your account."
       },
       {
         "service": "iam",
@@ -269,7 +269,7 @@
           "GetTrailStatus"
         ],
         "resourceScope": "*",
-        "reason": "Checks whether AWS activity logging is turned on, so your incident-response policy states what is actually true."
+        "reason": "Checks whether cloud activity logging is turned on, so your incident-response policy states what is actually true."
       },
       {
         "service": "pricing",
@@ -277,7 +277,7 @@
           "GetProducts"
         ],
         "resourceScope": "*",
-        "reason": "Fetches AWS's current prices so every cost shown to you is live, never a stale built-in number."
+        "reason": "Fetches your cloud provider's current prices so every cost shown to you is live, never a stale built-in number."
       },
       {
         "service": "sts",
@@ -285,7 +285,7 @@
           "GetCallerIdentity"
         ],
         "resourceScope": "*",
-        "reason": "Checks which AWS account it is connected to, so every screen can show where it is about to work."
+        "reason": "Checks which cloud account it is connected to, so every screen can show where it is about to work."
       }
     ],
     "requiredTags": [
@@ -313,7 +313,7 @@
     "endpoint": "/teardown"
   },
   "compliance": {
-    "dataHandled": "Security findings, audit evidence and policy documents about your AWS account — stored only in your own AWS account (your evidence bucket and table) and on your machine. The developer receives none of it.",
+    "dataHandled": "Security findings, audit evidence and policy documents about your cloud account — stored only in your own cloud account (your evidence bucket and table) and on your machine. The developer receives none of it.",
     "subprocessors": [],
     "securityContact": "https://github.com/leonct74/audit-poppy/security/advisories/new"
   },

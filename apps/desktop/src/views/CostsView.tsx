@@ -59,9 +59,9 @@ export function CostsView(props: { status: StatusResponse; refreshStatus: () => 
             <p className="small muted2" style={{ marginTop: 0 }}>
               Computed from ~{costs.resourceCount.toLocaleString("en-US")} resources found in your account.
               {costs.approxFallback
-                ? " Live AWS prices weren't reachable just now, so these use approximate rates — clearly not live."
-                : " Rates fetched live from AWS's price list."}{" "}
-              Billed by AWS in your own account; AuditPoppy adds nothing on top.
+                ? " Live prices weren't reachable just now, so these use approximate rates — clearly not live."
+                : " Rates fetched live from your cloud provider's price list."}{" "}
+              Billed by your cloud provider in your own account; AuditPoppy adds nothing on top.
             </p>
             <ul className="control-list">
               {costs.estimate.items.map((item) => (
@@ -120,7 +120,7 @@ export function CostsView(props: { status: StatusResponse; refreshStatus: () => 
           blastRadius={
             <>
               This disables what AuditPoppy enabled: the Security Hub checks and the Config change record.
-              New findings and change history stop accruing (AWS billing for them stops too). Anything that
+              New findings and change history stop accruing (billing for them stops too). Anything that
               was already on before AuditPoppy is <strong>not</strong> touched. Your evidence bucket, its
               bundles and the stack all stay — this is not removal.
             </>
@@ -148,7 +148,7 @@ export function CostsView(props: { status: StatusResponse; refreshStatus: () => 
       {disabledReport ? <Banner kind="ok">{disabledReport}</Banner> : null}
 
       <p className="small muted">
-        Your account-wide AWS bill (all services, month to date) lives in the AgentsPoppy Dashboard — this
+        Your account-wide cloud bill (all services, month to date) lives in the AgentsPoppy Dashboard — this
         screen totals only what AuditPoppy itself would enable.
       </p>
     </>

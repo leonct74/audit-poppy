@@ -72,7 +72,7 @@ function EnablePanel(props: { status: StatusResponse; onStarted: () => void }) {
       <div className="card">
         <h2>Turn on the checks</h2>
         <p className="small muted2" style={{ marginTop: 0 }}>
-          Your gap report is built from two AWS services in your own account. Nothing is enabled until you
+          Your gap report is built from two services in your own cloud account. Nothing is enabled until you
           approve it here, and the estimate below is computed from your account's real size
           {costs ? ` (~${costs.resourceCount.toLocaleString("en-US")} resources found)` : ""}.
         </p>
@@ -116,7 +116,7 @@ function EnablePanel(props: { status: StatusResponse; onStarted: () => void }) {
             try {
               const access = await host.ensureAccess();
               if (access !== "granted") {
-                setError("AgentsPoppy hasn't granted AWS access yet — approve AuditPoppy's connection and try again.");
+                setError("AgentsPoppy hasn't granted access to your cloud account yet — approve AuditPoppy's connection and try again.");
                 return;
               }
               await api.enable();
@@ -144,7 +144,7 @@ function ReportView(props: { report: GapReport }) {
       {report.warmingUp ? (
         <Banner kind="warn">
           <div>
-            <strong>Checks are warming up.</strong> AWS is still enabling controls and running first
+            <strong>Checks are warming up.</strong> Your cloud provider is still enabling controls and running first
             evaluations — results below are partial by construction, not a clean bill. Come back in a few
             hours; the report fills in on its own.
           </div>
@@ -196,7 +196,7 @@ function ReportView(props: { report: GapReport }) {
         <div className="card">
           <h2>Not yet in the criteria mapping</h2>
           <div className="small muted2">
-            AWS added or renamed these checks after mapping {report.mappingVersion}; they still count, and a
+            Your cloud provider added or renamed these checks after mapping {report.mappingVersion}; they still count, and a
             mapping update will file them under their criteria.
           </div>
           <ul className="control-list">
@@ -257,7 +257,7 @@ export function ReadinessView(props: { status: StatusResponse; refreshStatus: ()
       <div className="card">
         <h2>Turning on the checks…</h2>
         <div className="progress-line">
-          <span className="dot busy" /> AWS Config (the change record) first, then Security Hub and its two
+          <span className="dot busy" /> The change record first, then the checks and their two
           check catalogues.
         </div>
         <p className="small muted2">
