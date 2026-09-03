@@ -219,8 +219,11 @@ environment"* — the Docker-Desktop model, social/legal enforcement, not DRM.
 **The watermark is the mechanism that makes it self-enforcing.** In the unlicensed version,
 every page of every generated document — the auditor export, the policy pack, the gap-report
 PDF — carries a watermark (founder's wording as the base: *"made with Olly Digital — for
-personal use"*; recommended final form names the product and the disqualifier:
-**"AuditPoppy by Olly Digital — for personal use only, not licensed for business use"**).
+personal use"*; final form, DECIDED 2026-09-03: **"AuditPoppy by Olly Digital — not licensed
+for business use"**). It dropped "for personal use only" when the ladder was rewritten: the free
+row is where a 500-person company's evaluation starts, not a personal tier, and a watermark that
+calls its own reader a hobbyist repeats the exact mistake the tier names were renamed to avoid.
+The remaining clause is the whole message anyway.
 This is unusually strong in THIS product: the export's entire purpose is to be handed to an
 external party, and a "not licensed for business use" mark inside a company's *compliance
 evidence* is disqualifying to exactly the reader it reaches. The gate sits precisely on the

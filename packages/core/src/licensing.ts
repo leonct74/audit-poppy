@@ -47,10 +47,16 @@ export function accountEntitlementUrl(cloudAccountId: string, origin = PLATFORM_
 }
 
 /**
- * The watermark every page of every exported document carries when unlicensed
- * (DESIGN §8's recommended final form — names the product and the disqualifier).
+ * The watermark every page of every exported document carries when unlicensed.
+ *
+ * It names the product and the ONE disqualifier, and nothing else. The earlier wording opened
+ * with "for personal use only", which stopped being true when the ladder was rewritten (founder,
+ * 2026-09-03): the free row is where a 500-person company's evaluation starts, not a personal
+ * tier. A watermark that mislabels its own reader as a hobbyist tells an enterprise evaluator
+ * the product is not for them — the exact mistake the tier names were fixed to avoid — while
+ * "not licensed for business use" already says everything the mark has to say.
  */
-export const WATERMARK_TEXT = "AuditPoppy by Olly Digital — for personal use only, not licensed for business use";
+export const WATERMARK_TEXT = "AuditPoppy by Olly Digital — not licensed for business use";
 
 /**
  * The ladder, in three lines (founder, 2026-09-03): full access for everyone

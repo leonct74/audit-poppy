@@ -54,6 +54,10 @@ describe("the licence ladder — three lines, and the first is for everyone", ()
     expect(exportsWatermarked(false)).toBe(true);
     expect(exportsWatermarked(true)).toBe(false);
     expect(WATERMARK_TEXT.toLowerCase()).toContain("not licensed for business use");
+    // And it must NOT call its reader a hobbyist. The free row is where a 500-person
+    // evaluation starts; "personal use" on their evidence says the product is not for them —
+    // the same mistake the tier names were renamed to avoid.
+    expect(WATERMARK_TEXT.toLowerCase()).not.toContain("personal");
   });
 
   it("obeys the naming and pricing laws (no tier may carry a price)", () => {
