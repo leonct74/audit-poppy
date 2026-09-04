@@ -95,3 +95,56 @@ describe("the repo-wide scan (both laws bind every shipped word)", () => {
     expect(problems).toEqual([]);
   });
 });
+
+/**
+ * This repository is going PUBLIC, and its git history goes with it (CLAUDE.md).
+ * A checklist would be forgotten, so the rule is a test.
+ *
+ * A cloud account id is not a secret, but it is the seed for cross-account role probing,
+ * bucket-name guessing and support-desk social engineering — and it buys a reader of an
+ * open-source compliance tool exactly nothing. AWS's own documented example ids are the
+ * way to write one down.
+ */
+describe("nothing identifying may reach a repo that is going public", () => {
+  const repoRoot = join(__dirname, "..", "..", "..");
+  const EXT = new Set([".ts", ".tsx", ".mjs", ".js", ".json", ".html", ".css", ".md", ".yml", ".yaml"]);
+  const SKIP_DIRS = new Set(["node_modules", "dist", ".git", "generated", "vendor", "coverage"]);
+  // The ids AWS itself uses in public documentation. Anything else that shape is a real one.
+  const EXAMPLE_IDS = new Set(["111122223333", "123456789012", "444455556666", "555555555555"]);
+
+  const files: string[] = [];
+  const walk = (dir: string): void => {
+    let entries: string[];
+    try {
+      entries = readdirSync(dir);
+    } catch {
+      return;
+    }
+    for (const name of entries) {
+      if (SKIP_DIRS.has(name) || name === "package-lock.json") continue;
+      const p = join(dir, name);
+      if (statSync(p).isDirectory()) walk(p);
+      else if (EXT.has(extname(p))) files.push(p);
+    }
+  };
+  walk(repoRoot);
+
+  it("scans the whole repository, docs included — the leak was in a doc", () => {
+    expect(files.length).toBeGreaterThan(20);
+    expect(files.some((f) => f.endsWith("DESIGN.md"))).toBe(true);
+  });
+
+  it("contains no real cloud account id", () => {
+    const found: string[] = [];
+    for (const file of files) {
+      const text = readFileSync(file, "utf8");
+      for (const m of text.matchAll(/(?<![0-9A-Za-z_-])(\d{12})(?![0-9A-Za-z_-])/g)) {
+        if (!EXAMPLE_IDS.has(m[1])) {
+          const line = text.slice(0, m.index).split("\n").length;
+          found.push(`${file.slice(repoRoot.length + 1)}:${line} — use a placeholder or an AWS example id`);
+        }
+      }
+    }
+    expect(found).toEqual([]);
+  });
+});

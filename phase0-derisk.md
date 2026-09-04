@@ -1,8 +1,13 @@
 # Phase 0 — live de-risk log
 
-Sandbox account **REDACTED-ACCOUNT-ID** (`REDACTED-IAM-USER` IAM user, profile
-`REDACTED-PROFILE`), region **eu-west-1**. Started 2026-09-02. Everything here ran
-against real AWS; commands are reproducible with that profile.
+> This repository is intended to become public. Account ids, IAM user names and CLI profile
+> names are therefore kept OUT of it — not because they are secrets, but because an account id
+> is the seed for cross-account role probing, bucket-name guessing and support-desk social
+> engineering, and it buys a reader nothing. The findings below are the point; the account they
+> came from is not.
+
+Run against a private sandbox account in region **eu-west-1**, started 2026-09-02, using a
+dedicated CLI profile. Everything here ran against real AWS.
 
 ## Baseline (the "found enabled, not ours" test data)
 
@@ -83,7 +88,7 @@ per standard subscription. Pair with `get-findings` (per-control results) and
 
 | Resource | Id / name | Ours? |
 |---|---|---|
-| S3 bucket (Config delivery, tagged `auditpoppy=derisk`) | `auditpoppy-derisk-REDACTED-ACCOUNT-ID` | ours |
+| S3 bucket (Config delivery, tagged `auditpoppy=derisk`) | `auditpoppy-derisk-<account-id>` | ours |
 | IAM SLR `AWSServiceRoleForConfig` | created 2026-09-02 | ours |
 | Config recorder + delivery channel `default` | eu-west-1 | ours |
 | Security Hub + CIS 1.2.0 + FSBP 1.0.0 | eu-west-1 | ours |
@@ -103,7 +108,7 @@ per standard subscription. Pair with `get-findings` (per-control results) and
 
 ## Scheduled removal — nothing depends on memory (2026-09-02)
 
-Two scheduled tasks exist in the founder's Claude app (Scheduled section in the sidebar):
+Two scheduled tasks exist outside this repo, so nothing depends on anyone remembering:
 
 1. **`auditpoppy-phase0-teardown`** — fires **2026-09-09 09:00**: cost readout, findings
    probe, full teardown, baseline verification, log + design update.

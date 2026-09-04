@@ -21,6 +21,37 @@ dev installer when the agentspoppy repo is at `~/Projects/agentspoppy` or
 `$AGENTSPOPPY_REPO`; otherwise lays out the documented structure itself). Then RELAUNCH
 AgentsPoppy and approve the connection from the AuditPoppy tab.
 
+## ⚠️ This repository is going PUBLIC — and its history goes with it
+
+AuditPoppy ships as open source (founder, 2026-09-03), so nothing sensitive may be visible
+here. Two rules, and the second is the one that gets forgotten:
+
+1. **Nothing identifying goes in, ever.** No account ids, IAM user or role names, CLI profile
+   names, bucket names derived from an account, internal hostnames, or costs tied to a named
+   account. Not because they are secrets — because an account id seeds cross-account role
+   probing, bucket-name guessing and support-desk social engineering, and it buys a reader
+   nothing. Placeholders and AWS's documented example ids (`111122223333`) are fine. Findings,
+   lessons and mechanisms are the point and belong here.
+
+2. **DO NOT PUBLISH BY FLIPPING THIS REPO'S VISIBILITY.** Git history is published too, and
+   this repo's history already contains a real sandbox account id (commits `264cd02` and
+   `689c48f`, in `phase0-derisk.md` and `DESIGN.md`, redacted at the tip on 2026-09-03).
+   Publish the way the platform already does it: keep this repo private forever and generate
+   `audit-poppy-public-source` from a clean snapshot — the pattern behind
+   `agentspoppy-public-source` and `mailpoppy-public-source`, produced by
+   `agentspoppy/scripts/export-public.sh`. A squashed initial commit on a fresh repo carries
+   no history to leak.
+
+Before generating that snapshot, re-run the check:
+
+```bash
+git grep -nE "\b[0-9]{12}\b" -- $(git ls-files | grep -v package-lock) | grep -v 111122223333
+```
+
+Anything security-sensitive about the PLATFORM (how the licence endpoints can be abused, what
+was fixed, what risk was accepted) belongs in the private `agentspoppy-web` repo next to the
+code it describes — see `docs/security-review-license-flow.md` there — never in this one.
+
 ## The three laws that bind every word and grant
 
 1. **Naming law (DESIGN §0):** never "SOC 2 compliant/certified" — only a licensed CPA firm
