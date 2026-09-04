@@ -138,7 +138,11 @@ describe("nothing identifying may reach a repo that is going public", () => {
     const found: string[] = [];
     for (const file of files) {
       const text = readFileSync(file, "utf8");
-      for (const m of text.matchAll(/(?<![0-9A-Za-z_-])(\d{12})(?![0-9A-Za-z_-])/g)) {
+      // Digits-only lookarounds, deliberately. An earlier version excluded letters too, and
+      // so walked straight past `arn:aws:iam::<12 digits>ole/…` — a real id that had been
+      // mangled by a shell and glued to the next word. The `(?<!\d)…(?!\d)` pair still
+      // ignores a 13-digit epoch while catching an id wherever it is embedded.
+      for (const m of text.matchAll(/(?<!\d)(\d{12})(?!\d)/g)) {
         if (!EXAMPLE_IDS.has(m[1])) {
           const line = text.slice(0, m.index).split("\n").length;
           found.push(`${file.slice(repoRoot.length + 1)}:${line} — use a placeholder or an AWS example id`);

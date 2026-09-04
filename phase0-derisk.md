@@ -37,7 +37,8 @@ first and de-risked later, this would have been discovered in a customer's accou
 First written up as "Config validates a fresh SLR with minutes of lag — retry with
 backoff". **That was wrong.** The real cause: the recorder JSON was generated in a **zsh
 heredoc**, where `$ACCT:role` triggers zsh's `:r` history modifier — it silently ate the
-`:r`, producing `arn:aws:iam::REDACTED-ACCOUNT-IDole/…`. Config rejected a genuinely malformed
+`:r`, producing an ARN whose `:role` had become `ole` — `arn:aws:iam::<id>ole/…`.
+Config rejected a genuinely malformed
 ARN for 40 minutes while I theorized about propagation. With the ARN correct,
 `put-configuration-recorder` succeeded **instantly, first try — no SLR lag was observed
 at all** (SLR created 09:26, correct call succeeded 10:12, but a correct call was never
