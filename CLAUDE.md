@@ -33,25 +33,30 @@ here. Two rules, and the second is the one that gets forgotten:
    nothing. Placeholders and AWS's documented example ids (`111122223333`) are fine. Findings,
    lessons and mechanisms are the point and belong here.
 
-2. **The history is published too — and this one is not clean yet.** AuditPoppy goes public the
-   way every poppy does: this repo's visibility is flipped, no mirror (the AgentsPoppy broker is
-   the only repo that uses one, because its monorepo carries internal working state). That makes
-   git history public along with the tip, and commits `264cd02` and `689c48f` still contain a
-   real sandbox account id in `phase0-derisk.md` and `DESIGN.md` — redacted at the tip on
-   2026-09-03, but a redaction is not a deletion. **The history must be rewritten before the
-   switch is flipped**, once, while the repo is young and has one contributor. It is not in any
-   commit message, only in file contents, so a text replacement across all commits is enough.
+2. **The history is published too.** AuditPoppy goes public the way every poppy does: this
+   repo's visibility is flipped, no mirror (the AgentsPoppy broker is the only repo that
+   publishes through one, because its monorepo carries internal working state). So git history
+   goes public with the tip, and a redaction at the tip is not a deletion.
 
-Before flipping the switch, re-run the check — over history, not just the tip:
+   **This was done once, on 2026-09-04.** History carried a real sandbox account id, an IAM user
+   name and a CLI profile name in `CLAUDE.md`, `DESIGN.md` and `phase0-derisk.md`; every commit
+   on `main` and on the working branch was rewritten to replace them, and both branches were
+   force-pushed. Nothing in this repository's history contains them now. If you find yourself
+   about to add one, don't — the guard below will stop you anyway.
+
+Before flipping the switch, re-run the check over history rather than only the tip:
 
 ```bash
-git grep -nE "\b[0-9]{12}\b" $(git rev-list --all) -- '*.md' '*.ts' '*.tsx' '*.mjs' \
-  | grep -v 111122223333
+git grep -hoE "[0-9]{12}" $(git rev-list --all) -- '*.md' '*.ts' '*.tsx' '*.mjs' '*.json' \
+  | sort -u | grep -vE "111122223333|123456789012|444455556666|555555555555"
 ```
 
 The tip is guarded automatically by `packages/core/src/naming.test.ts`, which walks the whole
-repository — docs included — and fails on any 12-digit id that is not one of AWS's documented
-example ids. History has no such guard; that check above is the one thing a human must run.
+repository — docs and tests included — and fails on any 12-digit id that is not one of AWS's
+documented example ids. Its lookarounds are digits-only on purpose: an earlier version excluded
+letters too and walked straight past an id that a shell had glued to the following word, which
+is exactly how one survived the first redaction. History has no such guard; the check above is
+the one thing a human must run.
 
 Anything security-sensitive about the PLATFORM (how the licence endpoints can be abused, what
 was fixed, what risk was accepted) belongs in the private `agentspoppy-web` repo next to the
