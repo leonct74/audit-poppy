@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { APPROX_UNIT_PRICES, estimateMonthlyCosts, freeTrial } from "./costs";
+import { APPROX_UNIT_PRICES, estimateMonthlyCosts, freeTrial, type UnitPrices } from "./costs";
 
 describe("estimateMonthlyCosts", () => {
   it("prices from the account's actual shape and carries the source label", () => {
@@ -37,5 +37,35 @@ describe("freeTrial (the founder's free-trial rule)", () => {
 
   it("returns undefined for a malformed start", () => {
     expect(freeTrial("never", new Date())).toBeUndefined();
+  });
+
+  it("charges the up-front sweep from the LIVE rate and the account's real size", () => {
+    // The whole point of the line: it must move when either input moves. A figure that stayed
+    // put while prices or the account changed would be a hardcoded number wearing a disguise.
+    const live: UnitPrices = { ...APPROX_UNIT_PRICES, configPerItem: 0.006, source: "live" };
+    const small = estimateMonthlyCosts({ resourceCount: 100, enabledControls: 40 }, live);
+    const big = estimateMonthlyCosts({ resourceCount: 1000, enabledControls: 40 }, live);
+
+    expect(small.initialUsd).toBeCloseTo(100 * 0.006, 2);
+    expect(big.initialUsd).toBeCloseTo(1000 * 0.006, 2);
+    // Halve the live rate and the figure halves too.
+    const cheaper = estimateMonthlyCosts({ resourceCount: 100, enabledControls: 40 }, { ...live, configPerItem: 0.003 });
+    expect(cheaper.initialUsd).toBeCloseTo(small.initialUsd / 2, 2);
+  });
+
+  it("carries the source through, so an approximate figure can never render as live", () => {
+    const approx = estimateMonthlyCosts({ resourceCount: 100, enabledControls: 40 }, APPROX_UNIT_PRICES);
+    expect(approx.source).toBe("approx");
+    const live = estimateMonthlyCosts({ resourceCount: 100, enabledControls: 40 }, { ...APPROX_UNIT_PRICES, source: "live" });
+    expect(live.source).toBe("live");
+  });
+
+  it("is what a short test actually costs — the number the monthly figure hides", () => {
+    // A few minutes of running still pays the whole initial sweep; only the monthly part is
+    // avoided by turning it off. If these two were ever the same number the screen would be
+    // saying nothing.
+    const e = estimateMonthlyCosts({ resourceCount: 500, enabledControls: 79 }, APPROX_UNIT_PRICES);
+    expect(e.initialUsd).toBeGreaterThan(0);
+    expect(e.initialUsd).not.toBeCloseTo(e.totalMonthlyUsd, 2);
   });
 });

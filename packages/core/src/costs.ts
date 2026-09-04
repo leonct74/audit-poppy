@@ -63,8 +63,35 @@ export interface CostLineItem {
 export interface CostEstimate {
   items: CostLineItem[];
   totalMonthlyUsd: number;
+  /**
+   * What enabling COSTS AT ONCE, before a month has passed.
+   *
+   * A monthly figure on its own is quietly misleading, and the founder made exactly the wrong
+   * inference from it (2026-09-04): "if I run it a few minutes it's pennies, right?" AWS Config
+   * does not bill for elapsed time — it bills per configuration item, and switching the recorder
+   * on records one item for EVERY recordable resource in the account, immediately. On a small
+   * account that really is pennies; on one with thousands of resources it is dollars, and it is
+   * incurred whether the recorder runs for a month or is torn down five minutes later.
+   *
+   * So the estimate carries both numbers and the screen shows both. A compliance tool that
+   * surprises someone with a bill has damaged the one thing it sells.
+   */
+  initialUsd: number;
   source: UnitPrices["source"];
 }
+
+/** Configuration items recorded the moment the recorder starts: one per resource. A shape of
+ *  the service, not a price — the money still comes from the live rate it is multiplied by. */
+export const CONFIG_ITEMS_PER_RESOURCE_INITIAL = 1;
+
+/**
+ * The poppy's own stack — one Lambda run and a few KB of S3 a month. This is the ONE dollar
+ * figure not derived from a live rate, because there is no per-account query that would make it
+ * more accurate than "cents". It is therefore always reported with source "approx", so the
+ * screen marks it, and it is named here rather than sitting as a literal inside the function
+ * where nobody would find it to check.
+ */
+export const EVIDENCE_STACK_MONTHLY_USD_APPROX = 0.05;
 
 /** Round to cents for display math (the UI formats). */
 const cents = (n: number): number => Math.round(n * 100) / 100;
@@ -75,8 +102,10 @@ export function estimateMonthlyCosts(shape: AccountShape, prices: UnitPrices): C
   const config = cents(configItems * prices.configPerItem + ruleEvals * prices.configPerRuleEvaluation);
   const checks = shape.enabledControls * CHECK_RUNS_PER_MONTH;
   const securityhub = cents(checks * prices.securityHubPerCheck);
-  // The poppy's own stack: one Lambda run + a few KB of S3 a month — cents.
-  const evidence = 0.05;
+  const evidence = EVIDENCE_STACK_MONTHLY_USD_APPROX;
+  // Charged on the first recording sweep, not spread across the month.
+  const initial = cents(shape.resourceCount * CONFIG_ITEMS_PER_RESOURCE_INITIAL * prices.configPerItem);
+
   const items: CostLineItem[] = [
     {
       service: "config",
@@ -100,6 +129,7 @@ export function estimateMonthlyCosts(shape: AccountShape, prices: UnitPrices): C
   return {
     items,
     totalMonthlyUsd: cents(config + securityhub + evidence),
+    initialUsd: initial,
     source: prices.source,
   };
 }

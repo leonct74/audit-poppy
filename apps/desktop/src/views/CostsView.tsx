@@ -81,6 +81,23 @@ export function CostsView(props: { status: StatusResponse; refreshStatus: () => 
               <strong>Total while enabled</strong>
               <strong>≈ ${costs.estimate.totalMonthlyUsd.toFixed(2)}/month</strong>
             </div>
+            {/* The monthly figure alone reads as "so a short trial is nearly free" — and that is
+                wrong in a way that ends in a surprise bill. Config charges per recorded item, and
+                turning the recorder on records every resource you have straight away. Say it
+                where the number is, not in a footnote. */}
+            <div className="spread" style={{ paddingTop: 6 }}>
+              <span className="small">
+                <strong>Charged as soon as you turn it on</strong>
+                <div className="muted">
+                  Cloud config recording bills per recorded item, not per hour — switching it on records every
+                  resource you have once, right away. Turning it off five minutes later doesn't avoid this part.
+                </div>
+              </span>
+              <strong className="small">
+                ≈ ${costs.estimate.initialUsd.toFixed(2)} once
+                {costs.estimate.source === "approx" ? <span className="muted"> (approx)</span> : null}
+              </strong>
+            </div>
           </>
         )}
       </div>

@@ -207,6 +207,17 @@ Costs screen shows the disable switch right next to that line. A user must never
 trial converted to charges; "free trial" without the end date and the off switch is how
 silent subscriptions happen, and this product exists to remove exactly that kind of doubt.
 
+**Show what is charged AT ONCE, not only per month (founder question, 2026-09-04).** Asked
+whether a few minutes of testing would cost pennies, the honest answer is "that depends, and the
+screen doesn't say". Cloud config recording bills per recorded item, not per hour: switching the
+recorder on records one item for every recordable resource immediately, and turning it off five
+minutes later does not avoid that. A screen showing only `$X/month` invites exactly the wrong
+inference — on a 5,000-resource account the up-front sweep is dollars, not pennies. The estimate
+therefore carries `initialUsd` alongside the monthly total and the Costs screen shows both, with
+the same live/approx marker. Like every other figure here it is derived — live resource count ×
+live unit price — never a stored number; `costs.test.ts` pins that it moves when either input
+moves, which is what stops it silently becoming a hardcoded lie.
+
 ## 8. Licensing & pricing model — DECIDED (founder, 2026-09-02): personal-free, business-paid
 
 **No feature-gated freemium split.** The whole product is free — every feature, no tier
