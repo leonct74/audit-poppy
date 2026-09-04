@@ -33,20 +33,25 @@ here. Two rules, and the second is the one that gets forgotten:
    nothing. Placeholders and AWS's documented example ids (`111122223333`) are fine. Findings,
    lessons and mechanisms are the point and belong here.
 
-2. **DO NOT PUBLISH BY FLIPPING THIS REPO'S VISIBILITY.** Git history is published too, and
-   this repo's history already contains a real sandbox account id (commits `264cd02` and
-   `689c48f`, in `phase0-derisk.md` and `DESIGN.md`, redacted at the tip on 2026-09-03).
-   Publish the way the platform already does it: keep this repo private forever and generate
-   `audit-poppy-public-source` from a clean snapshot — the pattern behind
-   `agentspoppy-public-source` and `mailpoppy-public-source`, produced by
-   `agentspoppy/scripts/export-public.sh`. A squashed initial commit on a fresh repo carries
-   no history to leak.
+2. **The history is published too — and this one is not clean yet.** AuditPoppy goes public the
+   way every poppy does: this repo's visibility is flipped, no mirror (the AgentsPoppy broker is
+   the only repo that uses one, because its monorepo carries internal working state). That makes
+   git history public along with the tip, and commits `264cd02` and `689c48f` still contain a
+   real sandbox account id in `phase0-derisk.md` and `DESIGN.md` — redacted at the tip on
+   2026-09-03, but a redaction is not a deletion. **The history must be rewritten before the
+   switch is flipped**, once, while the repo is young and has one contributor. It is not in any
+   commit message, only in file contents, so a text replacement across all commits is enough.
 
-Before generating that snapshot, re-run the check:
+Before flipping the switch, re-run the check — over history, not just the tip:
 
 ```bash
-git grep -nE "\b[0-9]{12}\b" -- $(git ls-files | grep -v package-lock) | grep -v 111122223333
+git grep -nE "\b[0-9]{12}\b" $(git rev-list --all) -- '*.md' '*.ts' '*.tsx' '*.mjs' \
+  | grep -v 111122223333
 ```
+
+The tip is guarded automatically by `packages/core/src/naming.test.ts`, which walks the whole
+repository — docs included — and fails on any 12-digit id that is not one of AWS's documented
+example ids. History has no such guard; that check above is the one thing a human must run.
 
 Anything security-sensitive about the PLATFORM (how the licence endpoints can be abused, what
 was fixed, what risk was accepted) belongs in the private `agentspoppy-web` repo next to the
