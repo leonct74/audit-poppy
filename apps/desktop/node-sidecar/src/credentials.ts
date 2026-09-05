@@ -14,6 +14,13 @@ export interface AwsCredentialIdentity {
 }
 export type CredentialProvider = () => Promise<AwsCredentialIdentity>;
 
+/**
+ * A provider whose cache can be dropped before its clock says so. Expiry is not the only way a
+ * token dies: re-approving the connection rotates the session, and the credentials we hold are
+ * invalid from that moment even though their `expiration` is still hours away.
+ */
+export type RefreshableCredentialProvider = CredentialProvider & { invalidate: () => void };
+
 interface ScopedCredentials {
   accessKeyId: string;
   secretAccessKey: string;
@@ -69,7 +76,7 @@ async function mint(bootstrap: BackendBootstrap): Promise<ScopedCredentials> {
 }
 
 /** A caching, auto-refreshing provider for the AWS SDK's `credentials` option. */
-export function makeCredentialProvider(bootstrap: BackendBootstrap): CredentialProvider {
+export function makeCredentialProvider(bootstrap: BackendBootstrap): RefreshableCredentialProvider {
   let cached: ScopedCredentials | null = null;
   let inflight: Promise<ScopedCredentials> | null = null;
   const fresh = (c: ScopedCredentials): boolean => {
@@ -87,7 +94,7 @@ export function makeCredentialProvider(bootstrap: BackendBootstrap): CredentialP
       });
     return inflight;
   };
-  return async () => {
+  const provider = async (): Promise<AwsCredentialIdentity> => {
     const c = cached && fresh(cached) ? cached : await refresh();
     return {
       accessKeyId: c.accessKeyId,
@@ -96,4 +103,8 @@ export function makeCredentialProvider(bootstrap: BackendBootstrap): CredentialP
       expiration: new Date(c.expiration),
     };
   };
+  provider.invalidate = (): void => {
+    cached = null;
+  };
+  return provider;
 }

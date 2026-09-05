@@ -23,7 +23,7 @@ import {
   POLICY_TEMPLATES,
   renderPolicy,
 } from "@auditpoppy/core";
-import { errorMessage, isThrottled } from "./awsErrors";
+import { errorMessage, isInvalidToken, isThrottled } from "./awsErrors";
 import { resolveEnv } from "./bootstrap";
 import { makeClients } from "./clients";
 import { captureBaseline, enableChecks } from "./enable";
@@ -112,7 +112,9 @@ async function startEnable(): Promise<void> {
       ...enableOp,
       error: isThrottled(err)
         ? "Your cloud provider is limiting how fast we may call it right now. Nothing was left half-done — wait a minute and start the audit again; it picks up from where it got to."
-        : errorMessage(err),
+        : isInvalidToken(err)
+          ? "AuditPoppy's access to your cloud account expired mid-run. Start the audit again — it re-connects on its own and picks up from where it got to."
+          : errorMessage(err),
     };
   }
 }

@@ -56,3 +56,24 @@ export function isThrottled(err: unknown): boolean {
   const meta = (err as { $metadata?: { httpStatusCode?: number } })?.$metadata;
   return meta?.httpStatusCode === 429;
 }
+
+/**
+ * Credentials AWS will no longer accept. Distinct from throttling: retrying with the SAME token
+ * can never succeed, so the only useful response is to mint a new one.
+ *
+ * "The security token included in the request is invalid" (InvalidClientTokenId) is what the
+ * founder hit on 2026-09-05 after re-approving the connection — re-approval rotates the session
+ * underneath a sidecar that is still holding the previous token.
+ */
+export function isInvalidToken(err: unknown): boolean {
+  const name = errorName(err);
+  return (
+    name === "InvalidClientTokenId" ||
+    name === "UnrecognizedClientException" ||
+    name === "ExpiredToken" ||
+    name === "ExpiredTokenException" ||
+    name === "RequestExpired" ||
+    name === "InvalidAccessKeyId" ||
+    name === "AuthFailure"
+  );
+}
