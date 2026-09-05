@@ -98,6 +98,13 @@ export function permissionSet() {
       ], role),
       grant("iam", ["CreateServiceLinkedRole", "DeleteServiceLinkedRole", "GetServiceLinkedRoleDeletionStatus"], configSlr,
         "AWS Config needs its own AWS-defined helper role to read your configuration; this creates exactly that role when Config is turned on, and removes it at teardown if AuditPoppy created it."),
+      // PassRole on the SLR, separately from the stack roles above. Creating the role is not enough:
+      // PutConfigurationRecorder HANDS that role to the Config service, and AWS checks iam:PassRole
+      // on the role being handed over. Found live on 2026-09-05 — the mock has no IAM, so the smoke
+      // loop enabled happily while the real call failed with "no session policy allows the
+      // iam:PassRole action". Scoped to the one AWS-defined role, never to "*".
+      grant("iam", ["PassRole"], configSlr,
+        "Hands that AWS-defined helper role to the AWS Config service — the step that actually starts the change recording. It covers only that one role, so it cannot be used to hand over any other role in your account."),
       grant("lambda", [
         "CreateFunction", "DeleteFunction", "GetFunction", "GetFunctionConfiguration",
         "UpdateFunctionCode", "UpdateFunctionConfiguration", "AddPermission", "RemovePermission",

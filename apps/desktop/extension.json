@@ -123,6 +123,14 @@
         "reason": "AWS Config needs its own AWS-defined helper role to read your configuration; this creates exactly that role when Config is turned on, and removes it at teardown if AuditPoppy created it."
       },
       {
+        "service": "iam",
+        "actions": [
+          "PassRole"
+        ],
+        "resourceScope": "arn:aws:iam::*:role/aws-service-role/config.amazonaws.com/AWSServiceRoleForConfig*",
+        "reason": "Hands that AWS-defined helper role to the AWS Config service — the step that actually starts the change recording. It covers only that one role, so it cannot be used to hand over any other role in your account."
+      },
+      {
         "service": "lambda",
         "actions": [
           "CreateFunction",

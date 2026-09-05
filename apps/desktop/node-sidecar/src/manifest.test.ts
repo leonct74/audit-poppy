@@ -102,4 +102,41 @@ describe("the manifest and the declared permission set", () => {
     assert.ok(manifest.capabilities?.includes("commerce:purchase"));
     assert.ok(manifest.bugsUrl?.startsWith("https://"));
   });
+
+  /**
+   * The bug this pins was found by the founder pressing the button on a live account
+   * (2026-09-05): "not authorized to perform: iam:PassRole ... because no session policy allows
+   * the iam:PassRole action". The smoke loop had passed for days, because mock AWS does not
+   * enforce IAM — so nothing but a real call could have caught it.
+   *
+   * The general lesson, and why this test is shaped this way: for every API that HANDS a role
+   * to a service, creating the role is not the same permission as passing it. Test the pairing,
+   * not just the presence of each action.
+   */
+  it("can pass every role it creates to the service that needs it", () => {
+    const ps = permissionSet();
+    const iam = ps.grants.filter((g) => g.service === "iam");
+    const slrPattern = /aws-service-role\/config\.amazonaws\.com\/AWSServiceRoleForConfig/;
+
+    const createsSlr = iam.filter((g) => g.actions.includes("CreateServiceLinkedRole"));
+    assert.ok(createsSlr.length > 0, "expected a grant that creates the Config service-linked role");
+
+    for (const g of createsSlr) {
+      assert.ok(
+        slrPattern.test(g.resourceScope),
+        "the Config SLR grant should name the SLR, not a wildcard",
+      );
+      // PutConfigurationRecorder hands this role to Config; without PassRole on the SAME
+      // resource, enabling fails at the last step with the recorder never starting.
+      const passes = iam.some((other) => other.actions.includes("PassRole") && slrPattern.test(other.resourceScope));
+      assert.ok(passes, "iam:PassRole must be granted on the Config service-linked role");
+    }
+  });
+
+  it("never grants PassRole on every role in the account", () => {
+    for (const g of permissionSet().grants) {
+      if (g.service !== "iam" || !g.actions.includes("PassRole")) continue;
+      assert.notEqual(g.resourceScope, "*", "PassRole on \"*\" would let this hand over ANY role in the account");
+    }
+  });
 });
