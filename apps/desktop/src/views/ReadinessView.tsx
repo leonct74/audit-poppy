@@ -2,8 +2,8 @@
  * Readiness — the scan + gap report (DESIGN §2.1). Three faces, all derived
  * from live state on every mount (AGENTS.md §5 — leave and come back, you
  * land on the truth):
- *   1. checks not on → the enable panel (services, live costs, helper prompt)
- *   2. warming up    → "checks are warming up", NEVER an empty-clean report
+ *   1. not auditing yet → the start panel (services, live costs, helper prompt)
+ *   2. warming up      → "the audit is warming up", NEVER an empty-clean report
  *   3. running       → the gap report, grouped by Trust Services Criteria
  */
 import { useCallback, useEffect, useState } from "react";
@@ -106,7 +106,7 @@ function EnablePanel(props: { status: StatusResponse; onStarted: () => void }) {
         })}
         {costsError ? <Banner kind="warn">{costsError}</Banner> : null}
         <p className="small muted2">
-          Order matters: the change record starts first, then the checks — and both are recorded in the
+          Order matters: the change record starts first, then the audit checks — and both are recorded in the
           ledger so removal can disable exactly what was enabled here, nothing else.
         </p>
         {error ? <Banner kind="danger">{error}</Banner> : null}
@@ -151,7 +151,7 @@ function ReportView(props: { report: GapReport }) {
       {report.warmingUp ? (
         <Banner kind="warn">
           <div>
-            <strong>Checks are warming up.</strong> Your cloud provider is still enabling controls and running first
+            <strong>The audit is warming up.</strong> Your cloud provider is still enabling controls and running first
             evaluations — results below are partial by construction, not a clean bill. Come back in a few
             hours; the report fills in on its own.
           </div>
@@ -262,10 +262,10 @@ export function ReadinessView(props: { status: StatusResponse; refreshStatus: ()
   if (enabling) {
     return (
       <div className="card">
-        <h2>Turning on the checks…</h2>
+        <h2>Starting the audit…</h2>
         <div className="progress-line">
-          <span className="dot busy" /> The change record first, then the checks and their two
-          check catalogues.
+          <span className="dot busy" /> The change record first, then the audit checks and their two
+          catalogues.
         </div>
         <p className="small muted2">
           This runs in the background — leave, close, come back: it continues, and this screen picks up the
@@ -278,7 +278,7 @@ export function ReadinessView(props: { status: StatusResponse; refreshStatus: ()
   if (status.enableOp?.error) {
     return (
       <>
-        <Banner kind="danger">Turning on the checks hit a problem: {status.enableOp.error}</Banner>
+        <Banner kind="danger">Starting the audit hit a problem: {status.enableOp.error}</Banner>
         <PendingButton
           className="btn btn-primary"
           busyLabel="Retrying…"
@@ -313,7 +313,7 @@ export function ReadinessView(props: { status: StatusResponse; refreshStatus: ()
       {error ? <Banner kind="danger">{error}</Banner> : null}
       {loading && !report ? (
         <div className="card row">
-          <span className="spinner" /> Reading the check results…
+          <span className="spinner" /> Reading the audit results…
         </div>
       ) : null}
       {report ? <ReportView report={report} /> : null}

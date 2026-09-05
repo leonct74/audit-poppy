@@ -29,7 +29,7 @@ describe("the helper prompt", () => {
   });
 
   it("rule 3: demands a fixed answer shape mapping onto the form's fields", () => {
-    expect(prompt).toContain("ENABLE CHECKS:");
+    expect(prompt).toContain("START THE AUDIT:");
     expect(prompt).toContain("POLICY ANSWERS:");
     expect(prompt).toContain("NOTES FOR MY AUDITOR:");
     expect(prompt).toContain("at most three clarifying questions");

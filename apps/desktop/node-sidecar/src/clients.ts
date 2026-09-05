@@ -47,7 +47,18 @@ export interface Clients {
 
 export function makeClients(env: SidecarEnv): Clients {
   const credentials = env.bootstrap ? makeCredentialProvider(env.bootstrap) : undefined;
-  const cfg = { region: env.region, ...(credentials ? { credentials } : {}) };
+  // Throttling is normal here, not exceptional: enabling walks IAM, Config and Security Hub in
+  // one burst, and IAM in particular has very low request limits — the founder hit a bare "Rate
+  // exceeded" on a live account (2026-09-05) with the SDK's default 3 attempts. `adaptive` adds
+  // client-side rate limiting on top of backoff, which is what AWS recommends for exactly this
+  // shape of workload, and a higher ceiling gives a throttled burst room to drain instead of
+  // surfacing a meaningless error to someone who can do nothing about it.
+  const cfg = {
+    region: env.region,
+    maxAttempts: 8,
+    retryMode: "adaptive",
+    ...(credentials ? { credentials } : {}),
+  };
   return {
     config: new ConfigServiceClient(cfg) as AwsApi,
     securityhub: new SecurityHubClient(cfg) as AwsApi,

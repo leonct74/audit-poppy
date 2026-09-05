@@ -24,6 +24,23 @@ describe("checkCopy", () => {
     expect(checkCopy("audit-ready evidence, mapped to the SOC 2 Trust Services Criteria")).toHaveLength(0);
   });
 
+  it("flags 'the checks' used as the name of what the product does", () => {
+    // Founder review 2026-09-05, twice: the main button said "Turn on the checks" and he could
+    // not tell what it meant. "Checks" is our word for the mechanism; the product audits.
+    expect(checkCopy("Turn on the checks")).toHaveLength(1);
+    expect(checkCopy("Turn the checks off")).toHaveLength(1);
+    expect(checkCopy("Disable the checks")).toHaveLength(1);
+    expect(checkCopy("The checks are running")).toHaveLength(1);
+    expect(checkCopy("Checks are warming up")).toHaveLength(0); // not the banned standalone form
+  });
+
+  it("still allows a check that says what it is for", () => {
+    // Banning the word outright would be wrong — these are the real names of real things.
+    expect(checkCopy("AWS Security Hub — the audit checks")).toHaveLength(0);
+    expect(checkCopy("Runs the security checks your gap report is built from")).toHaveLength(0);
+    expect(checkCopy("Start auditing your account")).toHaveLength(0);
+  });
+
   it("flags hardcoded dollar amounts but allows the $0 state", () => {
     expect(checkCopy("only $499/yr")).toHaveLength(1);
     expect(checkCopy("about $ 15 per month")).toHaveLength(1);

@@ -32,7 +32,7 @@ It also pre-fills these written policies from what it observes; I answer the com
 ${policies}
 
 Ask me at most three clarifying questions if you need them. Then answer in EXACTLY this shape, so I can copy each line into the app:
-ENABLE CHECKS: yes / not yet — one line on why
+START THE AUDIT: yes / not yet — one line on why
 POLICY ANSWERS:
 <policy title>:
   <fieldId>: <my answer>

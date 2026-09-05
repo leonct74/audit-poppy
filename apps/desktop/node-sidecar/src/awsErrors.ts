@@ -33,3 +33,26 @@ export function isAlreadyExists(err: unknown): boolean {
   const name = errorName(err);
   return name === "InvalidInputException" || name === "EntityAlreadyExistsException" || name === "ResourceConflictException";
 }
+
+/**
+ * Throttling, across the services this poppy touches. Read structurally — the error NAME, and
+ * the HTTP status the SDK attaches — never by matching the human message: IAM says "Rate
+ * exceeded", Config says "ThrottlingException", and a message match would break the first time
+ * AWS reworded one.
+ */
+export function isThrottled(err: unknown): boolean {
+  const name = errorName(err);
+  if (
+    name === "ThrottlingException" ||
+    name === "Throttling" ||
+    name === "TooManyRequestsException" ||
+    name === "RequestLimitExceeded" ||
+    name === "RequestThrottled" ||
+    name === "RequestThrottledException" ||
+    name === "SlowDown"
+  ) {
+    return true;
+  }
+  const meta = (err as { $metadata?: { httpStatusCode?: number } })?.$metadata;
+  return meta?.httpStatusCode === 429;
+}

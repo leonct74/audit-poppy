@@ -39,6 +39,21 @@ export const CLOUD_NEUTRAL = [
   { pattern: /\bobserved in AWS\b/i, instead: '"observed in the cloud account"' },
 ];
 
+/**
+ * The vocabulary rule (founder, 2026-09-05): the product AUDITS an account. "Checks" is our
+ * internal word for the mechanism, and shipped copy that leads with it leaves the reader asking
+ * "check... check what?" — which is what happened to the founder in front of his own main button.
+ *
+ * "audit checks" and "security checks" are fine and stay: the noun they qualify says what they
+ * are for. What this bans is "the checks" standing alone AS the name of what the product does.
+ */
+export const VOCABULARY = [
+  // Both word orders: "turn on the checks" AND "turn the checks off".
+  { pattern: /\b(turn|switch)\s+(?:(?:on|off)\s+the\s+checks|the\s+checks\s+(?:on|off))\b/i, instead: '"start auditing your account" / "stop auditing"' },
+  { pattern: /\b(disable|enable)\s+the\s+checks\b/i, instead: '"stop auditing" / "start auditing"' },
+  { pattern: /\bthe\s+checks\s+are\s+(running|warming)/i, instead: '"the audit is running" / "the audit is warming up"' },
+];
+
 /** A dollar amount literal (the pricing law). "$0" alone is allowed. */
 export const HARDCODED_PRICE = /\$\s?\d+(?:[.,]\d+)?/;
 
@@ -53,6 +68,10 @@ export interface CopyViolation {
 export function checkCopy(text: string): CopyViolation[] {
   const violations: CopyViolation[] = [];
   for (const { pattern, instead } of FORBIDDEN_PHRASES) {
+    const m = text.match(pattern);
+    if (m) violations.push({ phrase: m[0], instead });
+  }
+  for (const { pattern, instead } of VOCABULARY) {
     const m = text.match(pattern);
     if (m) violations.push({ phrase: m[0], instead });
   }

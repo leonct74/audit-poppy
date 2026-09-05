@@ -11,7 +11,7 @@ import { Banner, Chip, friendlyError, PendingButton, TypeToConfirm } from "../ui
 
 const SERVICE_LABEL: Record<string, string> = {
   config: "AWS Config — the change record",
-  securityhub: "AWS Security Hub — the checks",
+  securityhub: "AWS Security Hub — the audit checks",
   evidence: "Evidence bucket + monthly snapshot",
 };
 
@@ -113,7 +113,7 @@ export function CostsView(props: { status: StatusResponse; refreshStatus: () => 
               </div>
             </div>
             <button type="button" className="btn btn-danger btn-sm" onClick={() => setConfirming(true)}>
-              Turn the checks off
+              Stop auditing
             </button>
           </div>
         </div>
@@ -122,27 +122,27 @@ export function CostsView(props: { status: StatusResponse; refreshStatus: () => 
       {checksOn && (!trial || trial.expired) ? (
         <div className="card spread">
           <div className="small muted2">
-            The checks are running{trial?.expired ? " and the free trial has ended" : ""} — the estimate above
+            The audit is running{trial?.expired ? " and the free trial has ended" : ""} — the estimate above
             is what they cost while enabled.
           </div>
           <button type="button" className="btn btn-danger btn-sm" onClick={() => setConfirming(true)}>
-            Turn the checks off
+            Stop auditing
           </button>
         </div>
       ) : null}
 
       {confirming ? (
         <TypeToConfirm
-          word="disable checks"
+          word="stop auditing"
           blastRadius={
             <>
-              This disables what AuditPoppy enabled: the Security Hub checks and the Config change record.
+              This stops the audit and disables what AuditPoppy enabled: the Security Hub checks and the Config change record.
               New findings and change history stop accruing (billing for them stops too). Anything that
               was already on before AuditPoppy is <strong>not</strong> touched. Your evidence bucket, its
               bundles and the stack all stay — this is not removal.
             </>
           }
-          actionLabel="Disable the checks"
+          actionLabel="Stop auditing"
           busyLabel="Disabling…"
           onConfirm={async () => {
             setError(null);

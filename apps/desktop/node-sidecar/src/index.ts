@@ -23,7 +23,7 @@ import {
   POLICY_TEMPLATES,
   renderPolicy,
 } from "@auditpoppy/core";
-import { errorMessage } from "./awsErrors";
+import { errorMessage, isThrottled } from "./awsErrors";
 import { resolveEnv } from "./bootstrap";
 import { makeClients } from "./clients";
 import { captureBaseline, enableChecks } from "./enable";
@@ -104,7 +104,16 @@ async function startEnable(): Promise<void> {
     }
     enableOp = { ...enableOp, finishedAt: new Date().toISOString() };
   } catch (err) {
-    enableOp = { ...enableOp, error: errorMessage(err) };
+    // "Rate exceeded" is what AWS says; it tells the person reading it nothing they can act on.
+    // The SDK already retried with adaptive backoff, so reaching here means the burst genuinely
+    // did not drain — and the honest instruction is "wait, then press it again", plus the fact
+    // that nothing is half-broken: enable is idempotent and the ledger recorded what got through.
+    enableOp = {
+      ...enableOp,
+      error: isThrottled(err)
+        ? "Your cloud provider is limiting how fast we may call it right now. Nothing was left half-done — wait a minute and start the audit again; it picks up from where it got to."
+        : errorMessage(err),
+    };
   }
 }
 
