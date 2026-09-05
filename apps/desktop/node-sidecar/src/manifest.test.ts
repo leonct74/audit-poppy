@@ -113,23 +113,49 @@ describe("the manifest and the declared permission set", () => {
    * to a service, creating the role is not the same permission as passing it. Test the pairing,
    * not just the presence of each action.
    */
-  it("can pass every role it creates to the service that needs it", () => {
-    const ps = permissionSet();
-    const iam = ps.grants.filter((g) => g.service === "iam");
-    const slrPattern = /aws-service-role\/config\.amazonaws\.com\/AWSServiceRoleForConfig/;
+  /**
+   * Every AWS-defined helper role this poppy causes to exist, and the service that owns it.
+   * Adding a service to the enable flow means adding a line here — which is the point: two
+   * separate live failures (2026-09-05) were both "we enabled a service and forgot that AWS
+   * would need to create a role for it", once explicitly and once as a hidden side effect of
+   * EnableSecurityHub. The list makes the omission fail a test instead of a founder's account.
+   */
+  const SERVICE_LINKED_ROLES = [
+    { service: "AWS Config", slr: "config.amazonaws.com/AWSServiceRoleForConfig" },
+    { service: "AWS Security Hub", slr: "securityhub.amazonaws.com/AWSServiceRoleForSecurityHub" },
+  ];
 
-    const createsSlr = iam.filter((g) => g.actions.includes("CreateServiceLinkedRole"));
-    assert.ok(createsSlr.length > 0, "expected a grant that creates the Config service-linked role");
+  it("may create — and later delete — every service-linked role it causes to exist", () => {
+    const iam = permissionSet().grants.filter((g) => g.service === "iam");
+    for (const { service, slr } of SERVICE_LINKED_ROLES) {
+      const onRole = iam.filter((g) => g.resourceScope.includes(slr));
+      assert.ok(onRole.length > 0, `no grant covers ${service}'s service-linked role`);
+      const actions = new Set(onRole.flatMap((g) => g.actions));
+      assert.ok(actions.has("CreateServiceLinkedRole"), `${service}: cannot create its helper role`);
+      // Leaves-no-trace: what we cause to exist, we must be able to remove.
+      assert.ok(actions.has("DeleteServiceLinkedRole"), `${service}: cannot remove its helper role at teardown`);
+    }
+  });
 
-    for (const g of createsSlr) {
-      assert.ok(
-        slrPattern.test(g.resourceScope),
-        "the Config SLR grant should name the SLR, not a wildcard",
-      );
-      // PutConfigurationRecorder hands this role to Config; without PassRole on the SAME
-      // resource, enabling fails at the last step with the recorder never starting.
-      const passes = iam.some((other) => other.actions.includes("PassRole") && slrPattern.test(other.resourceScope));
-      assert.ok(passes, "iam:PassRole must be granted on the Config service-linked role");
+  /**
+   * Roles this poppy HANDS to a service, which is a narrower set than the roles it causes to
+   * exist — and the distinction is the bug. PutConfigurationRecorder takes the Config role as a
+   * parameter, so iam:PassRole is checked on it; EnableSecurityHub takes no role at all, so
+   * PassRole there would be an over-grant. Creating a role and passing one are different
+   * permissions, and only the APIs that pass belong here.
+   */
+  const PASSED_ROLES = [
+    { api: "config:PutConfigurationRecorder", slr: "config.amazonaws.com/AWSServiceRoleForConfig" },
+  ];
+
+  it("can pass every role it hands to a service", () => {
+    // Found live 2026-09-05: "not authorized to perform: iam:PassRole ... because no session
+    // policy allows the iam:PassRole action". The mock enforces no IAM, so days of green smoke
+    // runs could never have caught it.
+    const iam = permissionSet().grants.filter((g) => g.service === "iam");
+    for (const { api, slr } of PASSED_ROLES) {
+      const passes = iam.some((g) => g.actions.includes("PassRole") && g.resourceScope.includes(slr));
+      assert.ok(passes, `${api} hands over ${slr}, so iam:PassRole must be granted on it`);
     }
   });
 

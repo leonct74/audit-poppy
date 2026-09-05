@@ -191,4 +191,14 @@ async function disableServices(clients: Clients, ours: Set<LedgerService>, repor
       await clients.iam.send(new DeleteServiceLinkedRoleCommand({ RoleName: "AWSServiceRoleForConfig" }));
     });
   }
+
+  // 5. Security Hub's service-linked role, same rule. It arrives with EnableSecurityHub rather
+  //    than by our own call, which makes it easy to forget — and a role left behind is a trace.
+  //    Deletion can legitimately fail while Security Hub is still on in ANOTHER region; attempt()
+  //    records that as a problem and teardown carries on, rather than aborting the whole removal.
+  if (ours.has("securityhub-slr")) {
+    await attempt("securityhub-slr", "delete Security Hub service role", async () => {
+      await clients.iam.send(new DeleteServiceLinkedRoleCommand({ RoleName: "AWSServiceRoleForSecurityHub" }));
+    });
+  }
 }

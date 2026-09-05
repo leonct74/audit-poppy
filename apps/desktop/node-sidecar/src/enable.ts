@@ -78,6 +78,7 @@ export async function captureBaseline(clients: Clients, store: LedgerStore, now 
   }
   if (securityHubOn) {
     ledger = recordService(ledger, "securityhub", true, now);
+    ledger = recordService(ledger, "securityhub-slr", true, now);
     ledger = recordService(ledger, "securityhub-standard:cis-1.2.0", true, now);
     ledger = recordService(ledger, "securityhub-standard:fsbp-1.0.0", true, now);
   }
@@ -217,6 +218,11 @@ export async function enableChecks(clients: Clients, store: LedgerStore, input: 
     // Ours (or not yet attempted): record write-ahead and enable. The call is
     // tolerant of "already enabled", so retries after a partial run are safe.
     ledger = recordService(ledger, "securityhub", false, now);
+    // EnableSecurityHub creates AWSServiceRoleForSecurityHub as a side effect — we never call
+    // CreateServiceLinkedRole for it, AWS does. Ledger it write-ahead all the same: a role that
+    // exists because of us is ours to remove, and "leaves no trace" cannot tell the difference
+    // between a role we created and one we caused to be created.
+    ledger = recordService(ledger, "securityhub-slr", false, now);
     store.write(ledger);
     try {
       await clients.securityhub.send(

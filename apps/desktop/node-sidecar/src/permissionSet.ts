@@ -42,6 +42,7 @@ const grant = (service: string, actions: string[], resourceScope = "*", reason?:
 const stack = `arn:aws:cloudformation:*:*:stack/${STACK_NAME}/*`;
 const role = `arn:aws:iam::*:role/${STACK_NAME}-*`;
 const configSlr = "arn:aws:iam::*:role/aws-service-role/config.amazonaws.com/AWSServiceRoleForConfig*";
+const securityHubSlr = "arn:aws:iam::*:role/aws-service-role/securityhub.amazonaws.com/AWSServiceRoleForSecurityHub*";
 const fn = `arn:aws:lambda:*:*:function:${STACK_NAME}-*`;
 const table = `arn:aws:dynamodb:*:*:table/${STACK_NAME}-*`;
 const logs = `arn:aws:logs:*:*:log-group:/aws/lambda/${STACK_NAME}-*`;
@@ -105,6 +106,12 @@ export function permissionSet() {
       // iam:PassRole action". Scoped to the one AWS-defined role, never to "*".
       grant("iam", ["PassRole"], configSlr,
         "Hands that AWS-defined helper role to the AWS Config service — the step that actually starts the change recording. It covers only that one role, so it cannot be used to hand over any other role in your account."),
+      // Security Hub creates its OWN service-linked role as a side effect of EnableSecurityHub —
+      // we never call CreateServiceLinkedRole for it, but the CALLER's session policy still has to
+      // allow the creation AWS performs on our behalf. Found live on 2026-09-05, one call after
+      // the Config PassRole fix: an implicit role creation is still a role creation.
+      grant("iam", ["CreateServiceLinkedRole", "DeleteServiceLinkedRole", "GetServiceLinkedRoleDeletionStatus"], securityHubSlr,
+        "AWS Security Hub needs its own AWS-defined helper role to read your findings; turning Security Hub on creates exactly that role, and removal deletes it again if AuditPoppy was what created it."),
       grant("lambda", [
         "CreateFunction", "DeleteFunction", "GetFunction", "GetFunctionConfiguration",
         "UpdateFunctionCode", "UpdateFunctionConfiguration", "AddPermission", "RemovePermission",

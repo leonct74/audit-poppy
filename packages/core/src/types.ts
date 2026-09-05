@@ -130,6 +130,7 @@ export type LedgerService =
   | "config-delivery-channel"
   | "config-slr"
   | "securityhub"
+  | "securityhub-slr"
   | "securityhub-standard:cis-1.2.0"
   | "securityhub-standard:fsbp-1.0.0";
 

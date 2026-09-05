@@ -131,6 +131,16 @@
         "reason": "Hands that AWS-defined helper role to the AWS Config service — the step that actually starts the change recording. It covers only that one role, so it cannot be used to hand over any other role in your account."
       },
       {
+        "service": "iam",
+        "actions": [
+          "CreateServiceLinkedRole",
+          "DeleteServiceLinkedRole",
+          "GetServiceLinkedRoleDeletionStatus"
+        ],
+        "resourceScope": "arn:aws:iam::*:role/aws-service-role/securityhub.amazonaws.com/AWSServiceRoleForSecurityHub*",
+        "reason": "AWS Security Hub needs its own AWS-defined helper role to read your findings; turning Security Hub on creates exactly that role, and removal deletes it again if AuditPoppy was what created it."
+      },
+      {
         "service": "lambda",
         "actions": [
           "CreateFunction",
