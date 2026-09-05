@@ -70,11 +70,13 @@ function EnablePanel(props: { status: StatusResponse; onStarted: () => void }) {
     <>
       <HelperBanner />
       <div className="card">
-        <h2>Turn on the checks</h2>
+        <h2>Start auditing your account</h2>
         <p className="small muted2" style={{ marginTop: 0 }}>
-          Your gap report is built from two services in your own cloud account. Nothing is enabled until you
-          approve it here, and the estimate below is computed from your account's real size
-          {costs ? ` (~${costs.resourceCount.toLocaleString("en-US")} resources found)` : ""}.
+          AuditPoppy examines your cloud account against the SOC 2 Trust Services Criteria and shows you
+          every gap it finds — what an auditor would ask about, before they ask. To do that it needs two
+          services switched on in your own account
+          {costs ? `, sized against the ~${costs.resourceCount.toLocaleString("en-US")} resources found there` : ""}.
+          Nothing is enabled until you approve it here, and it reads your estate — it never changes it.
         </p>
         {CHECK_SERVICES.map((service) => {
           const item = costs?.estimate.items.find((i) => i.service === service.id);
@@ -126,11 +128,16 @@ function EnablePanel(props: { status: StatusResponse; onStarted: () => void }) {
             }
           }}
         >
-          Turn on the checks
+          Start auditing your account
         </PendingButton>
-        <span className="small muted" style={{ marginLeft: 8 }}>
-          Runs in the background — you can leave this screen.
-        </span>
+        {/* The button names the GOAL; this line names the consequence — which account changes, what
+            it costs, and how to undo it. Founder review 2026-09-05: "check.. check what?" — the old
+            label named our machinery, so the one button that changes an account read as jargon. */}
+        <div className="small muted" style={{ marginTop: 8 }}>
+          Switches on AWS Config and AWS Security Hub in account{" "}
+          <span className="mono">{props.status.account ?? "—"}</span> ({props.status.region}). First scan takes a
+          few hours to fill in; you can leave this screen. Turn it off any time from the Costs tab.
+        </div>
       </div>
     </>
   );

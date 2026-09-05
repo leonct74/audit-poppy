@@ -16,13 +16,13 @@ export const CHECK_SERVICES: CheckServiceOption[] = [
   {
     id: "config",
     label: "AWS Config — the change record",
-    what: "Records every configuration change in your cloud account: the evidence trail auditors sample, and the base several checks need.",
+    what: "Records every configuration change in your cloud account. This is the evidence trail an auditor samples when they ask \u201cprove this was true all year, not just today\u201d, and several of the gap checks cannot run without it.",
     caution: "Billed per recorded change. It is turned on first — the checks need it running.",
   },
   {
     id: "securityhub",
     label: "AWS Security Hub — the checks",
-    what: `Runs the security checks your gap report is built from: ${STANDARD_LABELS["cis-1.2.0"]} and ${STANDARD_LABELS["fsbp-1.0.0"]}.`,
+    what: `Examines your account against ${STANDARD_LABELS["cis-1.2.0"]} and ${STANDARD_LABELS["fsbp-1.0.0"]}, which is where the gaps in your report come from — each one mapped to the SOC 2 criteria an auditor will ask about.`,
     caution: "30-day free trial, then billed per check. The end date and the after-trial cost are shown before you enable, and the off switch lives on the Costs screen.",
   },
 ];
