@@ -143,12 +143,24 @@ function EnablePanel(props: { status: StatusResponse; onStarted: () => void }) {
   );
 }
 
-function ReportView(props: { report: GapReport }) {
+function ReportView(props: { report: GapReport; findingsSeen?: number; findingsMatched?: number }) {
   const { report } = props;
   const t = report.totals;
   return (
     <>
-      {report.warmingUp ? (
+      {/* A read path that matches nothing looks EXACTLY like a warm-up from the outside: every
+          control says "awaiting data". It is not the same thing, and telling someone to wait a
+          few hours for a report that will never fill in is the worst answer we could give. */}
+      {props.findingsSeen && props.findingsSeen > 0 && props.findingsMatched === 0 ? (
+        <Banner kind="danger">
+          <div>
+            <strong>We can read your account, but not your results.</strong> Your cloud provider returned{" "}
+            {props.findingsSeen.toLocaleString("en-US")} check results and AuditPoppy could not match a single one to a
+            control — so this is a fault on our side, not checks still warming up. Waiting will not fix it. Please send
+            this from the Feedback tab.
+          </div>
+        </Banner>
+      ) : report.warmingUp ? (
         <Banner kind="warn">
           <div>
             <strong>The audit is warming up.</strong> Your cloud provider is still enabling controls and running first
@@ -316,7 +328,13 @@ export function ReadinessView(props: { status: StatusResponse; refreshStatus: ()
           <span className="spinner" /> Reading the audit results…
         </div>
       ) : null}
-      {report ? <ReportView report={report} /> : null}
+      {report ? (
+        <ReportView
+          report={report}
+          findingsSeen={props.status.findingsSeen}
+          findingsMatched={props.status.findingsMatched}
+        />
+      ) : null}
     </>
   );
 }

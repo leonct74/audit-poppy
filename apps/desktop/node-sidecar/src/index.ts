@@ -165,6 +165,9 @@ route("GET", "/status", async () => {
     ledger,
     readiness,
     warmingUp,
+    // Surfaced so the tab can tell "no findings yet" apart from "findings we cannot read".
+    findingsSeen: readiness && "findingsSeen" in readiness ? readiness.findingsSeen : undefined,
+    findingsMatched: readiness && "findingsMatched" in readiness ? readiness.findingsMatched : undefined,
     stack,
     enableOp,
     securityHubEnabledAt: state.securityHubEnabledAt ?? null,

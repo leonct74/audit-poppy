@@ -38,6 +38,9 @@ export interface StatusResponse {
   ledger: Ledger;
   readiness: ReadinessInfo | { error: string } | null;
   warmingUp: boolean;
+  /** Findings read vs attributed to a control. seen > 0 with matched 0 = a broken read path. */
+  findingsSeen?: number;
+  findingsMatched?: number;
   stack: StackInfo;
   enableOp: { startedAt: string; finishedAt?: string; error?: string } | null;
   securityHubEnabledAt: string | null;
