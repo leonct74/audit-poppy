@@ -1,6 +1,7 @@
 export * from "./types";
 export * from "./naming";
 export * from "./mapping";
+export * from "./equivalence";
 export * from "./gapReport";
 export * from "./ledger";
 export * from "./costs";

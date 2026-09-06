@@ -36,7 +36,7 @@ describe("reading control results back from Security Hub", () => {
     ]), standards);
     assert.equal(res.findingsSeen, 1);
     assert.equal(res.findingsMatched, 1, "a consolidated finding must be attributed");
-    assert.equal(res.controls[0].compliance, "FAILED");
+    assert.equal(res.controls[0]!.compliance, "FAILED");
   });
 
   it("still attributes the legacy shape, keyed by the control ARN", async () => {
@@ -44,7 +44,7 @@ describe("reading control results back from Security Hub", () => {
       { Compliance: { Status: "PASSED" }, ProductFields: { StandardsControlArn: CONTROL_ARN } },
     ]), standards);
     assert.equal(res.findingsMatched, 1);
-    assert.equal(res.controls[0].compliance, "PASSED");
+    assert.equal(res.controls[0]!.compliance, "PASSED");
   });
 
   it("records a PASS — the filter used to throw every one of them away", async () => {
@@ -54,7 +54,7 @@ describe("reading control results back from Security Hub", () => {
     const res = await fetchControls(hub([
       { Compliance: { Status: "PASSED", SecurityControlId: "IAM.4" }, Workflow: { Status: "RESOLVED" } },
     ]), standards);
-    assert.equal(res.controls[0].compliance, "PASSED");
+    assert.equal(res.controls[0]!.compliance, "PASSED");
   });
 
   it("lets one FAILED outrank a PASSED for the same control", async () => {
@@ -62,8 +62,8 @@ describe("reading control results back from Security Hub", () => {
       { Compliance: { Status: "PASSED", SecurityControlId: "IAM.4" } },
       { Compliance: { Status: "FAILED", SecurityControlId: "IAM.4" }, Resources: [{ Id: "r1" }] },
     ]), standards);
-    assert.equal(res.controls[0].compliance, "FAILED");
-    assert.deepEqual(res.controls[0].failedResources, ["r1"]);
+    assert.equal(res.controls[0]!.compliance, "FAILED");
+    assert.deepEqual(res.controls[0]!.failedResources, ["r1"]);
   });
 
   it("reports findings seen but unmatched, so a broken read path cannot pose as a warm-up", async () => {
@@ -72,7 +72,7 @@ describe("reading control results back from Security Hub", () => {
     ]), standards);
     assert.equal(res.findingsSeen, 1);
     assert.equal(res.findingsMatched, 0);
-    assert.equal(res.controls[0].compliance, "NO_DATA");
+    assert.equal(res.controls[0]!.compliance, "NO_DATA");
   });
 
   it("says nothing was seen when nothing was returned — the genuine warm-up case", async () => {

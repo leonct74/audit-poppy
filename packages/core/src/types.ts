@@ -49,6 +49,12 @@ export interface ControlState {
   compliance: "PASSED" | "FAILED" | "WARNING" | "NOT_AVAILABLE" | "NO_DATA";
   /** Resources the failing findings name (bounded; for the gap report detail). */
   failedResources?: string[];
+  /**
+   * Set when this result was inherited from the security control that actually carries the
+   * finding (AWS reports one finding per underlying control, under its FSBP-style name). The
+   * report shows it, so a derived answer is never mistaken for a check that ran under this id.
+   */
+  derivedFrom?: string;
 }
 
 /**
@@ -118,6 +124,8 @@ export interface GapControl {
   auditorNote?: string;
   fix?: string;
   failedResources?: string[];
+  /** The security control this result was inherited from, when it was. */
+  derivedFrom?: string;
 }
 
 /**

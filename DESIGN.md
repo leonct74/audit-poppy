@@ -175,6 +175,24 @@ AuditPoppy needs to *see everything* (that is the product) and *change almost no
 - **Later:** ISO 27001 and PCI views are mostly re-mapping the same checks; multi-framework
   is a rendering feature, not new collection.
 
+**Consolidated control findings, and the CIS join (live finding, 2026-09-06).** AWS reports ONE
+finding per underlying security control, named FSBP-style (`IAM.4`) and associated with every
+standard that contains it — there is no finding carrying `CIS.1.12`. A first live report showed
+the consequence exactly: all 42 CIS controls "no data" while the same checks had results under
+their FSBP names, and because this table is CIS-heavy, 42 of the 74 mapped controls were
+permanently blank while the standard carrying every finding sat 81% unmapped.
+
+The join is repo-owned data (`equivalence.ts`), not an API call: the pairing is stable published
+fact, and keeping it here means it is reviewed like code and pinned by tests that run without
+AWS — where an extra grant and an unverifiable response shape is precisely where this project's
+live bugs have come from. The rule for adding a pair is that the two controls test the SAME
+thing; an unpaired control stays honestly empty, because **a wrong pairing puts a false pass or
+a false failure into a document destined for an auditor, which is worse than the blank it
+replaces.** Where several CIS controls share one security control (the seven password rules all
+roll into `IAM.7`), a PASS is inherited — `IAM.7` passes only when every rule passes — but a
+FAILURE is recorded as a WARNING rather than asserting which rule broke. Everything inherited
+carries `derivedFrom`, and the report says so on the row.
+
 ## 6. Privacy & threat model (the honest paragraph, up front)
 
 Everything stays in the customer's account — but the *customer's own admins* can read the

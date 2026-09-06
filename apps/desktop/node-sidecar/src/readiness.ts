@@ -24,7 +24,7 @@ import {
 import { isNotFound, isNotSubscribed } from "./awsErrors";
 import type { Clients } from "./clients";
 import type { Ledger } from "@auditpoppy/core";
-import { entryFor } from "@auditpoppy/core";
+import { entryFor, inheritFindings } from "@auditpoppy/core";
 
 /** How we recognise the two pinned standards in their subscription ARNs. */
 const STANDARD_ARN_MARKERS: Record<StandardId, string> = {
@@ -227,7 +227,11 @@ export async function fetchControls(clients: Clients, standards: EnabledStandard
       `[readiness] read ${seen} findings but matched none to a control — the finding shape is not one this build recognises`,
     );
   }
-  return { controls: controls.map(({ arn: _arn, ...rest }) => rest), findingsSeen: seen, findingsMatched: matched };
+  // AWS reports one finding per underlying security control, under its FSBP-style name, so the
+  // CIS view of the same check arrives empty. Fill those in from their pair before anyone sees
+  // the list — every consumer (report, export, snapshot) then reads the same filled-in set.
+  const filled = inheritFindings(controls.map(({ arn: _arn, ...rest }) => rest));
+  return { controls: filled, findingsSeen: seen, findingsMatched: matched };
 }
 
 interface RecordersOutput {

@@ -200,6 +200,19 @@ function ReportView(props: { report: GapReport; findingsSeen?: number; findingsM
                     <span>{c.title}</span>
                     {!c.enabled ? <Chip>disabled in Security Hub</Chip> : null}
                   </div>
+                  {/* Say where a derived answer came from. Your cloud provider reports one
+                      result per underlying check, under one of its two names; showing the
+                      inherited answer without saying so would imply a check ran under this id
+                      when it did not. */}
+                  {c.derivedFrom ? (
+                    <div className="small muted">
+                      Result taken from <span className="mono">{c.derivedFrom}</span>, the same check under its other
+                      name.
+                      {c.compliance === "WARNING"
+                        ? " That check covers several requirements at once, so a failure cannot be pinned on this one — treat it as a flag, not a finding."
+                        : ""}
+                    </div>
+                  ) : null}
                   {c.auditorNote ? <div className="small muted2">Why an auditor cares: {c.auditorNote}</div> : null}
                   {c.compliance === "FAILED" && c.fix ? <div className="small">Fix: {c.fix}</div> : null}
                   {c.failedResources?.length ? (

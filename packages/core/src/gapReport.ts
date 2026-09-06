@@ -79,6 +79,7 @@ export function buildGapReport(input: GapReportInput): GapReport {
       auditorNote: mapping?.auditorNote,
       fix: mapping?.fix,
       failedResources: c.failedResources,
+      ...(c.derivedFrom ? { derivedFrom: c.derivedFrom } : {}),
     };
     if (!mapping) {
       unmapped.push(control);
