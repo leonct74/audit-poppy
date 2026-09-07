@@ -59,6 +59,8 @@ export interface PoliciesResponse {
   templates: PolicyTemplate[];
   rendered: RenderedPolicy[];
   answers: Record<string, Record<string, string>>;
+  /** Why an observed fact is missing, when one is — already in the user's words. */
+  postureProblem?: string | null;
 }
 
 export interface ExportResponse {

@@ -178,6 +178,14 @@ export interface ObservedPosture {
   region: string;
   iamUserCount?: number;
   usersWithoutMfa?: number;
+  /**
+   * How many users the MFA check actually managed to read. Present only when it is FEWER than
+   * `iamUserCount` — i.e. the scan was partial, so `usersWithoutMfa` is a floor, not a total.
+   * A compliance document may not round a floor up into a fact.
+   */
+  mfaUsersChecked?: number;
+  /** Why the MFA scan came back short or empty, in the user's words. Never an SDK message. */
+  mfaScanProblem?: string;
   passwordPolicy?: {
     present: boolean;
     minimumLength?: number;

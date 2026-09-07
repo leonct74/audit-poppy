@@ -292,6 +292,38 @@ roll into `IAM.7`), a PASS is inherited — `IAM.7` passes only when every rule 
 FAILURE is recorded as a WARNING rather than asserting which rule broke. Everything inherited
 carries `derivedFrom`, and the report says so on the row.
 
+### The policy pack's one hard rule: a missing fact changes the SENTENCE (2026-09-07)
+
+Found the first time the Policies screen ran against a real account. It listed 11 users, then
+the per-user MFA read failed, and the Access Control policy rendered:
+
+> "Current state, as observed in the cloud account: 11 user accounts, of which **not yet
+> observed** lack MFA."
+
+In a document written for an auditor. Two separate faults produced it, and both are fixed:
+
+1. **The observation discarded what it had already learned.** The user count and the per-user
+   MFA scan shared one `try`, so a single failing user threw away every user already counted and
+   left nothing but a blank — with no way to find out why. Each user is now counted separately,
+   the scan records how many it actually read, and the reason is carried in the user's words
+   (never naming a user: that string reaches a document).
+2. **"not yet observed" was a VALUE.** It reads fine on a chip and is a disaster inside a
+   sentence. `observedValues()` now returns `undefined` for a fact it does not have, and section
+   bodies carry conditionals — `{{#id}}…{{/id}}` and `{{^id}}…{{/id}}` — so the prose changes
+   shape instead of splicing in a non-value. The chip still renders the "not yet observed"
+   label, where it belongs.
+
+And a partial scan is reported as a **floor, never a total**: "at least 1 lack MFA — that count
+covers the 9 accounts we could check". Saying "1 lack MFA" when only 9 of 11 were read is a
+false specific claim, which is the same mistake `inheritFindings` refuses to make when a shared
+control fails. Over-claiming in an auditor's document is the one error worth engineering against
+everywhere it can occur.
+
+The renderer resolves conditionals in a LOOP, because one pass leaves nested blocks behind — the
+outer match consumes the inner tags and a replaced body is never re-scanned. The first version
+of this shipped a literal `{{#mfaCoverage}}` into the rendered text, which is exactly the class
+of bug it was written to prevent.
+
 ## 6. Privacy & threat model (the honest paragraph, up front)
 
 Everything stays in the customer's account — but the *customer's own admins* can read the

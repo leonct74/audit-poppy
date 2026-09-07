@@ -190,6 +190,17 @@ is the platform's. And read the whole policy, not the lines matching the service
   full result. **One thing to remember at submission: `bugsUrl` points at this repo's issues and
   this repo is still PRIVATE**, so the link 404s until the visibility flip — which must therefore
   happen before submission, not after.
+- ⚠️ **Policies screen first live run (2026-09-07) — two real bugs, both fixed, one still
+  undiagnosed.** On an account with 11 users the MFA read failed and the policy rendered
+  *"11 user accounts, of which **not yet observed** lack MFA"* — in a document written for an
+  auditor. Cause 1: the user count and the per-user MFA scan shared one `try`, so one failing
+  user discarded everything already counted, silently. Cause 2: "not yet observed" was a VALUE,
+  fine on a chip and a disaster in prose. Both fixed (DESIGN §5a), a partial scan now reports a
+  FLOOR rather than a total, and the reason is shown on the screen instead of a blank.
+  **Still unknown: WHY that account's `ListMFADevices` calls failed** — throttling is the
+  suspect (11 sequential IAM calls) but the old code swallowed the error. The next run says so
+  in plain words on the Policies tab. **Same lesson as the six enable bugs: it lived in the gap
+  between the mock and AWS.**
 - Next: phase-0 teardown + cost readout (09-09) → `npm run certify` and the machine-gate
   check → platform-side items (commerce product, deploy the signup, catalogue submission)
   — DESIGN §12 "What remains before listing". Still unexercised live: **the Policies screen end

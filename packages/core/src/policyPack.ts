@@ -63,7 +63,13 @@ export const POLICY_TEMPLATES: PolicyTemplate[] = [
       },
       {
         heading: "Authentication",
-        body: "Multi-factor authentication is required for console access. Current state, as observed in the cloud account: {{iamUserCount}} user accounts, of which {{usersWithoutMfa}} lack MFA. The account password policy: {{passwordPolicySummary}}.",
+        // Every observed fact here is conditional, because each one can independently fail to
+        // read on a live account and none of them may appear in the prose as a non-value.
+        body:
+          "Multi-factor authentication is required for console access." +
+          "{{#iamUserCount}} Current state, as observed in the cloud account: {{iamUserCount}} user accounts{{#mfaCoverage}}, {{mfaCoverage}}{{/mfaCoverage}}.{{/iamUserCount}}" +
+          "{{#mfaScanProblem}} {{mfaScanProblem}}{{/mfaScanProblem}}" +
+          " The account password policy: {{passwordPolicySummary}}.",
       },
       {
         heading: "Access review and offboarding",
@@ -194,7 +200,16 @@ export interface RenderedPolicy {
 }
 
 /** Turn observed posture into the values the platform-observed fields carry. */
-export function observedValues(posture: ObservedPosture): Record<string, string> {
+/**
+ * The observed facts, as strings — with `undefined` meaning NOT OBSERVED.
+ *
+ * It used to return the literal "not yet observed" for a missing fact, which reads fine on a
+ * chip and is a disaster inside a sentence: a live account on 2026-09-07 produced
+ * "11 user accounts, of which not yet observed lack MFA" in a document destined for an auditor.
+ * A missing fact is now absent, so a template can choose different WORDS rather than splice a
+ * non-value into prose. The chips render the "not yet observed" label themselves.
+ */
+export function observedValues(posture: ObservedPosture): Record<string, string | undefined> {
   const pw = posture.passwordPolicy;
   const pwSummary = !pw || !pw.present
     ? "no account password policy is set"
@@ -203,12 +218,57 @@ export function observedValues(posture: ObservedPosture): Record<string, string>
     ? `activity logging is enabled${posture.multiRegionTrail ? " in all regions" : " (in one region only)"}`
     : "activity logging is NOT enabled";
   return {
-    iamUserCount: posture.iamUserCount === undefined ? "not yet observed" : String(posture.iamUserCount),
-    usersWithoutMfa: posture.usersWithoutMfa === undefined ? "not yet observed" : String(posture.usersWithoutMfa),
+    iamUserCount: posture.iamUserCount === undefined ? undefined : String(posture.iamUserCount),
+    usersWithoutMfa: posture.usersWithoutMfa === undefined ? undefined : String(posture.usersWithoutMfa),
+    // A partial scan is a FLOOR, and it has to say so in the sentence itself — "1 lack MFA" and
+    // "at least 1 of the 9 we could check lack MFA" are different claims, and only one of them
+    // is true when the scan came up short.
+    mfaCoverage:
+      posture.usersWithoutMfa === undefined
+        ? undefined
+        : posture.mfaUsersChecked === undefined
+          ? `of which ${posture.usersWithoutMfa} lack MFA`
+          : `of which at least ${posture.usersWithoutMfa} lack MFA — that count covers the ${posture.mfaUsersChecked} accounts we could check`,
+    mfaScanProblem: posture.mfaScanProblem,
     passwordPolicySummary: pwSummary,
     cloudTrailState: trail,
     configRecorderState: "configuration changes in this account are recorded continuously (enabled by AuditPoppy)",
   };
+}
+
+/**
+ * Fill a body template. Three forms, and the two conditionals exist so a fact we could NOT
+ * observe changes the sentence instead of appearing inside it:
+ *
+ *   {{id}}                     the value
+ *   {{#id}}…{{/id}}            include this run only when `id` was observed
+ *   {{^id}}…{{/id}}            include it only when `id` was NOT observed
+ *
+ * Substitution goes through a FUNCTION callback, never a replacement string: a `$&` or `$1`
+ * arriving in a customer's typed answer would otherwise be interpreted by String.replace and
+ * rewrite the document around it. (Kept from the security review — it is easy to undo by
+ * accident when editing this line.)
+ */
+function renderBody(
+  template: string,
+  valueOf: Map<string, string | undefined>,
+  present: (id: string) => boolean,
+): string {
+  // Resolve REPEATEDLY, because a single pass leaves nested blocks behind: the outer match
+  // consumes the inner tags as part of its body, and a replaced body is not re-scanned. The MFA
+  // sentence nests one conditional inside another, and the first version of this shipped
+  // "{{#mfaCoverage}}" straight into the rendered text. Each pass removes at least one pair, so
+  // this terminates; the cap is there so a malformed template cannot spin.
+  let body = template;
+  for (let pass = 0; pass < 10; pass += 1) {
+    const next = body.replace(
+      /\{\{([#^])(\w+)\}\}([\s\S]*?)\{\{\/\2\}\}/g,
+      (_, kind: string, id: string, inner: string) => ((kind === "#") === present(id) ? inner : ""),
+    );
+    if (next === body) break;
+    body = next;
+  }
+  return body.replace(/\{\{(\w+)\}\}/g, (_, id: string) => valueOf.get(id) ?? `[${id}]`);
 }
 
 /**
@@ -229,10 +289,17 @@ export function renderPolicy(
         ? observed[spec.id] ?? "not yet observed"
         : customerAnswers[spec.id]?.trim() || spec.suggestion || "",
   }));
-  const valueOf = new Map(fields.map((x) => [x.id, x.value]));
+  // Chips show every declared field; prose may also reference derived values (mfaCoverage) that
+  // are not fields of their own, so the sentence can change shape rather than lose a word.
+  const valueOf = new Map<string, string | undefined>(fields.map((x) => [x.id, x.value]));
+  for (const [id, value] of Object.entries(observed)) if (!valueOf.has(id)) valueOf.set(id, value);
+  const present = (id: string): boolean => {
+    const v = valueOf.get(id);
+    return v !== undefined && v !== "" && v !== "not yet observed";
+  };
   const sections = template.sections.map((s) => ({
     heading: s.heading,
-    body: s.body.replace(/\{\{(\w+)\}\}/g, (_, id: string) => valueOf.get(id) ?? `[${id}]`),
+    body: renderBody(s.body, valueOf, present),
   }));
   return {
     id: template.id,

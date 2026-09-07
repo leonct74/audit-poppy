@@ -125,6 +125,10 @@ export function PoliciesView() {
   return (
     <>
       <HelperBanner where="policies" />
+      {/* When a fact could not be read, say WHY here rather than leaving "not yet observed" on a
+          chip. MFA coverage is one of the first things an auditor asks about, so silently
+          missing it is worse than an ugly banner. */}
+      {data.postureProblem ? <Banner kind="warn">{data.postureProblem} You can reopen this tab to try again.</Banner> : null}
       <p className="small muted2">
         The written policies auditors ask for, pre-filled from what AuditPoppy can actually observe in your
         account. Answer the company-specific fields once; the Export tab packages the finished documents.

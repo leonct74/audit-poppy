@@ -11,7 +11,7 @@ import { ListFunctionsCommand } from "@aws-sdk/client-lambda";
 import { DescribeDBInstancesCommand } from "@aws-sdk/client-rds";
 import { ListBucketsCommand } from "@aws-sdk/client-s3";
 import type { ObservedPosture } from "@auditpoppy/core";
-import { isNotFound } from "./awsErrors";
+import { errorMessage, isNotFound, isThrottled } from "./awsErrors";
 import type { Clients } from "./clients";
 
 interface CountsOutput {
@@ -105,18 +105,47 @@ export async function observePosture(clients: Clients, accountId: string, region
     observedAt: new Date().toISOString(),
   };
 
+  // The MFA scan is one call PER USER, so it is the most failure-prone read in here — a live
+  // account throttles IAM where a mock never will. It used to sit in a single try with the user
+  // count, which meant one failing user threw away every user already counted and left the
+  // document saying nothing about MFA at all, with no way to find out why. Seen live on
+  // 2026-09-07: 11 users listed, MFA "not yet observed".
+  //
+  // So: count each user separately, keep what was learned, and record how many were actually
+  // read. A partial scan gives a FLOOR ("at least N of the M we could check"), never a total —
+  // rounding a floor up into a fact is the one mistake worth engineering against in a document
+  // an auditor reads.
+  let users: { UserName?: string }[] = [];
   try {
-    const users = ((await clients.iam.send(new ListUsersCommand({ MaxItems: MAX_USERS_FOR_MFA_SCAN }))) as UsersOutput).Users ?? [];
+    users = ((await clients.iam.send(new ListUsersCommand({ MaxItems: MAX_USERS_FOR_MFA_SCAN }))) as UsersOutput).Users ?? [];
     posture.iamUserCount = users.length;
+  } catch (err) {
+    posture.mfaScanProblem = `The list of user accounts could not be read (${errorMessage(err)}).`;
+  }
+
+  if (posture.iamUserCount !== undefined) {
     let withoutMfa = 0;
+    let checked = 0;
+    let lastProblem: string | undefined;
     for (const user of users) {
       if (!user.UserName) continue;
-      const mfa = (await clients.iam.send(new ListMFADevicesCommand({ UserName: user.UserName }))) as MfaOutput;
-      if ((mfa.MFADevices ?? []).length === 0) withoutMfa += 1;
+      try {
+        const mfa = (await clients.iam.send(new ListMFADevicesCommand({ UserName: user.UserName }))) as MfaOutput;
+        if ((mfa.MFADevices ?? []).length === 0) withoutMfa += 1;
+        checked += 1;
+      } catch (err) {
+        // Never name the user: this string reaches a document, and a user name is exactly the
+        // kind of identifying detail that has no business being in one.
+        lastProblem = isThrottled(err)
+          ? "Your cloud provider limited how fast we could check each account."
+          : errorMessage(err);
+      }
     }
-    posture.usersWithoutMfa = withoutMfa;
-  } catch {
-    /* leave undefined — the policy pack says "not yet observed" */
+    if (checked > 0) posture.usersWithoutMfa = withoutMfa;
+    if (checked < users.length) {
+      posture.mfaUsersChecked = checked;
+      posture.mfaScanProblem = `Multi-factor authentication could only be checked for ${checked} of ${users.length} accounts.${lastProblem ? ` ${lastProblem}` : ""}`;
+    }
   }
 
   try {

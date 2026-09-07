@@ -259,6 +259,10 @@ route("GET", "/policies", async () => {
     templates: POLICY_TEMPLATES,
     rendered: POLICY_TEMPLATES.map((t) => renderPolicy(t, posture, state.policyAnswers[t.id] ?? {})),
     answers: state.policyAnswers,
+    // Surfaced so the screen can say WHY a fact is missing. "not yet observed" on a chip tells
+    // someone nothing they can act on, and MFA coverage is one of the facts an auditor asks
+    // about first.
+    postureProblem: posture.mfaScanProblem ?? null,
   };
 });
 
