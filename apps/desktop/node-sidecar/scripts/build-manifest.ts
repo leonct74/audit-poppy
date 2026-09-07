@@ -35,14 +35,12 @@ export function buildManifest() {
       subprocessors: [],
       securityContact: "https://github.com/leonct74/audit-poppy/security/advisories/new",
     },
-    capabilities: [
-      "aws:credentials",
-      "connection:read",
-      "backend:invoke",
-      "host:openExternal",
-      "host:notify",
-      "commerce:purchase",
-    ],
+    // ONLY what the frontend actually calls (AGENTS.md §10). `connection:read` and `host:notify`
+    // were declared and never used — copied in with the shape of the manifest rather than earned
+    // by a call. An unused capability is the same liability as an unused grant: it widens what a
+    // person approves, and nothing fails when it is taken away, so it survives by inertia.
+    // Pinned by manifest.test.ts, which reads the frontend source.
+    capabilities: ["aws:credentials", "backend:invoke", "host:openExternal", "commerce:purchase"],
   };
 }
 

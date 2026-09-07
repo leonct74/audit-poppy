@@ -32,12 +32,6 @@ export interface PurchaseInfo {
   owned: boolean;
 }
 
-interface ConnectionLike {
-  id?: string;
-  status?: string;
-  app?: { id?: string; name?: string };
-}
-
 const inHost = typeof window !== "undefined" && window.parent !== window;
 
 const pending = new Map<string, { resolve: (v: unknown) => void; reject: (e: Error) => void }>();
@@ -99,7 +93,6 @@ export const host = {
   inHost,
   ensureAccess: (): Promise<"granted" | "pending" | "denied"> =>
     inHost ? call("ensureAccess") : Promise.resolve("granted"),
-  getConnection: (): Promise<ConnectionLike> => call("getConnection"),
   invokeBackend: <T>(req: BackendInvoke): Promise<T> => (inHost ? call<T>("invokeBackend", req) : devInvoke<T>(req)),
   // Dev mode runs in a real browser (not the host webview), where window.open
   // works — so downloads and links stay testable without AgentsPoppy.
@@ -108,8 +101,6 @@ export const host = {
     window.open(url, "_blank", "noopener");
     return Promise.resolve();
   },
-  notify: (n: { title: string; body?: string }): Promise<void> =>
-    inHost ? call("notify", n) : Promise.resolve(console.info(`[notify] ${n.title}`, n.body ?? "")),
   // Every commerce call takes the same optional `target` — the key the entitlement is filed
   // under. AuditPoppy always passes the cloud account id, so a licence follows the ACCOUNT
   // being audited rather than the install that paid for it: reinstalling AgentsPoppy, or moving

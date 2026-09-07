@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, it } from "node:test";
@@ -206,6 +206,71 @@ describe("the manifest and the declared permission set", () => {
     for (const g of permissionSet().grants) {
       if (g.service !== "iam" || !g.actions.includes("PassRole")) continue;
       assert.notEqual(g.resourceScope, "*", "PassRole on \"*\" would let this hand over ANY role in the account");
+    }
+  });
+});
+
+/**
+ * "`capabilities` lists ONLY what your frontend actually calls" (AGENTS.md §10).
+ *
+ * Two were declared and never called — `connection:read` and `host:notify` — because a manifest
+ * gets written from the shape of a manifest rather than from the calls that earn each line. An
+ * unused capability is the same liability as an unused grant: it widens what a person approves,
+ * and removing it breaks nothing, so nothing ever removes it. This reads the frontend source, so
+ * the manifest cannot drift back.
+ */
+describe("declared capabilities are earned by real calls", () => {
+  // The platform's METHOD_CAPABILITY map, for the methods this poppy could use.
+  const METHODS: Record<string, string[]> = {
+    "aws:credentials": ["ensureAccess"],
+    "connection:read": ["getConnection", "getAudit", "getInventory"],
+    "backend:invoke": ["invokeBackend"],
+    "host:openExternal": ["openExternal"],
+    "host:notify": ["notify"],
+    "commerce:purchase": ["purchaseInfo", "buyProduct", "isPurchased", "manageSubscription"],
+  };
+
+  const frontendDir = join(here, "..", "..", "src");
+  const bridgePath = join(frontendDir, "lib", "host.ts");
+
+  /** Every frontend source EXCEPT the bridge itself, which DEFINES the methods rather than calling them. */
+  function frontendSources(dir: string): string[] {
+    const out: string[] = [];
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) out.push(...frontendSources(full));
+      else if (/\.tsx?$/.test(entry.name) && full !== bridgePath) out.push(readFileSync(full, "utf8"));
+    }
+    return out;
+  }
+
+  const source = frontendSources(frontendDir).join("\n");
+
+  /**
+   * Matches a call to `m`, allowing what real call sites actually look like:
+   *   host.openExternal(…)            plain
+   *   host\n  .purchaseInfo(…)         chained across lines — match the call, not the receiver
+   *   host.invokeBackend<Status>(…)   a generic argument sits between the name and the paren
+   * That last one is why the first version of this test reported the poppy's most-used
+   * capability as unused.
+   */
+  const calls = (m: string): RegExp => new RegExp(`\\.${m}\\s*(<[^>]*>)?\\s*\\(`);
+  const declared = (JSON.parse(readFileSync(manifestPath, "utf8")) as { capabilities: string[] }).capabilities;
+
+  it("declares nothing the frontend never calls", () => {
+    for (const capability of declared) {
+      const methods = METHODS[capability];
+      assert.ok(methods, `unknown capability "${capability}" — add it to METHODS above`);
+      // Calls chain across lines (`host\n  .purchaseInfo(`), so match the call, not the receiver.
+      const called = methods.some((m) => calls(m).test(source));
+      assert.ok(called, `"${capability}" is declared but nothing calls ${methods.join("/")}`);
+    }
+  });
+
+  it("declares everything the frontend does call — the other direction fails at runtime", () => {
+    for (const [capability, methods] of Object.entries(METHODS)) {
+      const called = methods.some((m) => calls(m).test(source));
+      if (called) assert.ok(declared.includes(capability), `${methods.join("/")} is called but "${capability}" is not declared`);
     }
   });
 });

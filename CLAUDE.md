@@ -180,6 +180,16 @@ is the platform's. And read the whole policy, not the lines matching the service
      `dynamodb:DescribeTable` is isolated cleanly — both principals hold `DeleteTable`.
   3. "Leaves no trace" is real behaviour now, not just a design claim. What remains is the
      FORMAL certificate, and that is blocked on the platform, not on this repo.
+- ✅ **Listing-readiness audited against AGENTS.md §10 + the release runbook (2026-09-07)**, using
+  the platform's own tooling rather than by reading: `validate-manifest` green, and it **packs** —
+  3.0 MB / 6 files, same sha256 across two runs (deterministic STORE zip, as promised). Two
+  capabilities were declared and never called (`connection:read`, `host:notify`) and are gone,
+  pinned now by a test that reads the frontend source. `npm run pack` added, because the packer
+  looks for the backend at `apps/desktop/backend/index.cjs` while the build writes it to
+  `node-sidecar/dist/index.cjs` — the same missing-script trap as `certify`. DESIGN §12 has the
+  full result. **One thing to remember at submission: `bugsUrl` points at this repo's issues and
+  this repo is still PRIVATE**, so the link 404s until the visibility flip — which must therefore
+  happen before submission, not after.
 - Next: phase-0 teardown + cost readout (09-09) → `npm run certify` and the machine-gate
   check → platform-side items (commerce product, deploy the signup, catalogue submission)
   — DESIGN §12 "What remains before listing". Still unexercised live: **the Policies screen end

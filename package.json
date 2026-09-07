@@ -17,7 +17,8 @@
     "build": "npm run build -w @auditpoppy/desktop && npm run build -w @auditpoppy/desktop-sidecar",
     "preinstall:local": "npm run build",
     "install:local": "node scripts/install-local.mjs",
-    "certify": "node scripts/certify.mjs"
+    "certify": "node scripts/certify.mjs",
+    "pack": "npm run build && node scripts/pack.mjs"
   },
   "engines": {
     "node": ">=20"

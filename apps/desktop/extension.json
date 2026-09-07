@@ -361,10 +361,8 @@
   },
   "capabilities": [
     "aws:credentials",
-    "connection:read",
     "backend:invoke",
     "host:openExternal",
-    "host:notify",
     "commerce:purchase"
   ]
 }

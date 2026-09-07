@@ -567,6 +567,39 @@ survive a reinstall) is a listed follow-up, not a design change.
 
 ### What remains before listing
 
+**Audited against AGENTS.md §10 and the release runbook on 2026-09-07**, with the platform's own
+tooling rather than by reading. What that turned up:
+
+- ✅ `validate-manifest` (the platform's, the same `parseManifest` the host runs): **valid** —
+  27 grants, backend confined, all three network doors declared.
+- ✅ **Packs with the directory's packer**: 3.0 MB, 6 files. Well under the "~100 MB+ means a
+  runtime got in" line, and the sha256 came out identical across two independent runs, which is
+  the deterministic-STORE-zip promise holding — the sha *is* the trust story.
+- ✅ Costs show the `$0 — nothing running, nothing billing` state explicitly, not by implication.
+- ✅ `requiredTags` carries `agentspoppy:connection`; both laws test-pinned; Feedback tab last;
+  helper prompt present; naming carries the suffix.
+- 🔧 **Two capabilities were declared and never called** — `connection:read` and `host:notify`.
+  Removed, along with their bridge helpers so code and manifest agree. Same failure as the unused
+  `lambda:InvokeFunction` grant: a manifest gets written from the shape of a manifest rather than
+  from the calls that earn each line, and nothing breaks when an unused one is removed, so it
+  survives. A test now reads the frontend source and fails both ways — declared-but-uncalled, and
+  called-but-undeclared. It was verified to fail by re-adding one.
+- 🔧 **`npm run pack` added.** The packer defaults `--backend` to `apps/desktop/backend/index.cjs`
+  and our build writes `apps/desktop/node-sidecar/dist/index.cjs`, so the documented command dies
+  with "built backend not found". `install-local.mjs` already knew the real path; the pack path
+  did not. Same shape as the missing `certify` script, fixed the same way.
+- ⚠️ **`bugsUrl` points at this repo's issues, and this repo is still private** — the link 404s
+  for everyone but the founder, and §9a requires a *public* tracker. It resolves itself when the
+  repo's visibility is flipped, which is planned anyway; it just has to happen **before**
+  submission, not after.
+- ❌ `certify` — blocked on the platform's three missing delete actions (§3 above), not on
+  anything here.
+- ⏳ **The founder's, and it cannot be done from a repo:** click-test the PACKED build in the real
+  host (install-dev + full app restart). That is where `network.machine: "aws-only"` is actually
+  proven — the host refuses undeclared connections on the real spawn path, so a wrong declaration
+  shows up as a failed call in the poppy, never as a warning at pack time. Also: install it and
+  read the permission screen, which must rate amber/green with no beyond-own findings.
+
 1. Phase-0 week-end: costs readout + teardown verification (scheduled 09-09/09-20) feed
    §7's printed magnitudes.
 2. Live verify in the sandbox: install into AgentsPoppy, enable → report → stack →
