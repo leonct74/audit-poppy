@@ -87,11 +87,25 @@ code it describes — see `docs/security-review-license-flow.md` there — never
 - ✅ Phase 0 de-risk LIVE since 2026-09-02 (`phase0-derisk.md`): Audit Manager cut
   (closed to new accounts); enable order + read path verified; costs measuring for a
   week; teardown + dead-man scheduled (09-09 / 09-20).
-- ✅ **Full build DONE (2026-09-02, phases 1–3 + the in-app half of 4 — DESIGN §12
-  "Build state").** Monorepo green: 69 tests, typecheck, both bundles, manifest generated
-  from `permissionSet()` and valid under the platform validator. Both laws are
-  test-pinned repo-wide (`packages/core/src/naming.test.ts`).
-- Next: phase-0 week-end readout (scheduled) → live verify in the sandbox (install,
-  full loop, the machine-gate check, `npm run certify`) → platform-side items (commerce
-  product, small-company registration flow, catalogue submission) — DESIGN §12 "What
-  remains before listing".
+- ✅ **Full build DONE (2026-09-02, phases 1–3 + the in-app half of 4 — DESIGN §12).**
+- ✅ **LIVE-VERIFIED END TO END against a real production account (2026-09-05 → 07):**
+  install → connect → start the audit → evidence stack → snapshot → export. Six real bugs
+  that no mocked test could have found, because the mock enforces no IAM and returns findings
+  in a shape AWS no longer uses:
+  1. `iam:PassRole` missing on the Config service-linked role — enabling died at the last step.
+  2. `iam:CreateServiceLinkedRole` missing on Security Hub's own role, which
+     `EnableSecurityHub` creates as a side effect. Teardown would also have orphaned it.
+  3. No retry configuration at all: a live account throttles where a mock never will.
+  4. Credentials invalidated early (re-approval rotates the session) wedged the sidecar
+     permanently — the SDK memoizes the identity, so the CLIENT has to be rebuilt.
+  5. Consolidated control findings were unmatchable, and passing findings were filtered out
+     at source: the gap report was structurally empty and said "awaiting data" about it.
+  6. The CIS half of the mapping could never receive a finding (`equivalence.ts`).
+  **The lesson worth keeping: every one of these lived in the gap between the mock and AWS.
+  Mocked tests prove the logic; only a real account proves the contract.**
+- ✅ Mapping expanded to 2026.09.1 (121 entries) after the live report showed more FAILING
+  controls outside the criteria than inside. On that account: 0 failures now unmapped.
+- Next: phase-0 teardown + cost readout (09-09) → `npm run certify` and the machine-gate
+  check → platform-side items (commerce product, deploy the signup, catalogue submission)
+  — DESIGN §12 "What remains before listing". Still unexercised live: teardown against a
+  real account, and the Policies screen end to end.

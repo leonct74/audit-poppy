@@ -18,7 +18,7 @@
  */
 import type { MappedCheck, StandardId, TscId } from "./types";
 
-export const MAPPING_VERSION = "2026.09.0";
+export const MAPPING_VERSION = "2026.09.1";
 
 /** Auditor-facing names + plain descriptions for each criteria group. */
 export const TSC_META: Record<TscId, { name: string; description: string }> = {
@@ -294,6 +294,155 @@ export const MAPPING: MappedCheck[] = [
   fsbp("ACM.1", ["CC6"],
     "An expired certificate breaks TLS — availability and trust fail at the same moment.",
     "Renew or remove expiring/expired ACM certificates (enable managed renewal)."),
+  // ---- Mapping expansion, 2026.09.1 -------------------------------------------------
+  // A live account (2026-09-07) put 40 FAILING controls outside the criteria entirely — more
+  // failures unmapped than mapped, including a CRITICAL. Everything below was failing or
+  // sits in the same family, so the report files what an auditor would actually raise.
+
+  // Account & identity
+  fsbp("Account.1", ["CC2", "CC7"],
+    "An account with no security contact is one AWS cannot reach when it spots abuse — auditors read it as a gap in the incident-notification path.",
+    "Set the alternate security contact on the account."),
+  fsbp("IAM.21", ["CC6"],
+    "A customer-managed policy with wildcard actions grants more than anyone reviewed; auditors sample policies for exactly this.",
+    "Replace wildcard actions in customer-managed policies with the specific actions needed."),
+  fsbp("IAM.9", ["CC6"],
+    "Root without MFA means one password protects the entire account — the highest-impact single control there is.",
+    "Enable MFA on the root account."),
+  fsbp("IAM.18", ["CC7", "CC9"],
+    "Incident response needs a working escalation path to AWS itself; a support role is the evidence that path exists.",
+    "Create an IAM role granting access to AWS Support."),
+
+  // Encryption key access
+  fsbp("KMS.1", ["CC6", "C1"],
+    "A policy allowing decryption against every key defeats the point of separating keys — one compromised principal reads everything.",
+    "Scope decryption permissions to the specific keys a principal needs."),
+  fsbp("KMS.2", ["CC6", "C1"],
+    "An inline policy allowing decryption on all keys is the same exposure as a managed one, and harder to review.",
+    "Remove blanket decryption permissions from inline policies and scope them per key."),
+
+  // Threat detection & vulnerability management
+  fsbp("Inspector.1", ["CC7"],
+    "Auditors ask how you learn a running instance has a known vulnerability; Inspector scanning is the usual answer.",
+    "Enable Amazon Inspector EC2 scanning."),
+  fsbp("Inspector.2", ["CC7"],
+    "Container images inherit vulnerabilities from their base layers, and nothing surfaces them unless the registry is scanned.",
+    "Enable Amazon Inspector ECR scanning."),
+  fsbp("Inspector.3", ["CC7"],
+    "Function code carries dependency vulnerabilities like anything else, and is easy to leave unscanned.",
+    "Enable Amazon Inspector Lambda code scanning."),
+  fsbp("Inspector.4", ["CC7"],
+    "Standard Lambda scanning covers the runtime and packages behind your functions.",
+    "Enable Amazon Inspector Lambda standard scanning."),
+  fsbp("ECR.1", ["CC7", "CC8"],
+    "An unscanned registry ships known-vulnerable images straight to production, and change management cannot show they were checked.",
+    "Turn on image scanning for every private ECR repository."),
+  fsbp("Macie.1", ["C1"],
+    "Confidentiality answers start with knowing where sensitive data actually sits; Macie is the discovery control.",
+    "Enable Amazon Macie."),
+
+  // Public exposure
+  fsbp("SSM.7", ["CC6", "C1"],
+    "A publicly shared Systems Manager document can leak the commands and parameters you run across the estate.",
+    "Enable the block-public-sharing setting for SSM documents."),
+  fsbp("EC2.182", ["CC6", "C1"],
+    "A publicly restorable snapshot hands a full disk image to anyone who asks — the same exposure as a public bucket.",
+    "Enable block public access for EBS snapshots."),
+  fsbp("EC2.15", ["CC6"],
+    "A subnet that auto-assigns public IPs puts new workloads on the internet by default, before anyone decides they should be.",
+    "Turn off auto-assign public IPv4 on subnets that should stay private."),
+  fsbp("EC2.172", ["CC6"],
+    "VPC block public access is the account-level guard that survives a single bad route or gateway.",
+    "Enable VPC Block Public Access to block internet gateway traffic."),
+
+  // Application front doors
+  fsbp("AppSync.5", ["CC6"],
+    "An API key is a shared static secret with no user identity behind it — auditors treat it as unauthenticated access.",
+    "Authenticate AppSync APIs with IAM, Cognito or OIDC instead of API keys."),
+  fsbp("AppSync.2", ["CC7"],
+    "Without field-level logging there is no record of what a caller actually asked for.",
+    "Enable field-level logging on AppSync APIs."),
+  fsbp("APIGateway.1", ["CC7"],
+    "Execution logging is the request-level record auditors sample when asking what an API did.",
+    "Enable execution logging on REST and WebSocket API stages."),
+  fsbp("APIGateway.9", ["CC7"],
+    "Access logs answer who called the API and when — the question that follows every incident.",
+    "Configure access logging on API Gateway V2 stages."),
+  fsbp("APIGateway.4", ["CC6", "CC7"],
+    "A public API with no WAF in front has no layer between the internet and your handlers.",
+    "Associate a WAF Web ACL with the API."),
+  fsbp("APIGateway.11", ["CC6", "C1"],
+    "An out-of-date TLS policy on a custom domain keeps weak ciphers alive for every client.",
+    "Move API Gateway domain names onto a current security policy."),
+  fsbp("APIGateway.3", ["CC7"],
+    "Tracing is how an operations team reconstructs a failing request; auditors read it as monitoring maturity.",
+    "Enable X-Ray tracing on REST API stages."),
+
+  // Customer identity
+  fsbp("Cognito.2", ["CC6"],
+    "An identity pool that allows unauthenticated identities hands AWS credentials to anyone who asks.",
+    "Disable unauthenticated identities on the identity pool."),
+  fsbp("Cognito.5", ["CC6"],
+    "MFA for your end users is the same control auditors check for your staff, applied to the people whose data it is.",
+    "Enable MFA on the Cognito user pool."),
+  fsbp("Cognito.3", ["CC6"],
+    "A weak user-pool password policy is the password-policy finding, moved to your customers.",
+    "Strengthen the user pool's password policy (length, complexity, reuse)."),
+  fsbp("Cognito.1", ["CC6", "CC7"],
+    "Threat protection is what notices credential stuffing against your sign-in, rather than discovering it afterwards.",
+    "Activate threat protection in full-function mode for standard authentication."),
+  fsbp("Cognito.4", ["CC6", "CC7"],
+    "Custom authentication flows need the same protection as the standard one, or they become the way in.",
+    "Activate threat protection in full-function mode for custom authentication."),
+  fsbp("Cognito.6", ["A1"],
+    "Deleting a user pool destroys every account in it, irreversibly.",
+    "Enable deletion protection on the user pool."),
+
+  // Durability & change control
+  fsbp("DynamoDB.6", ["A1"],
+    "Deletion protection is what stops one mistaken call removing a table and everything in it.",
+    "Enable deletion protection on production tables."),
+  fsbp("CloudFormation.3", ["CC8", "A1"],
+    "Termination protection is the change-management guard on the stacks your infrastructure is defined by.",
+    "Enable termination protection on production stacks."),
+  fsbp("CloudFormation.4", ["CC8"],
+    "A stack with no service role deploys with whoever ran it, so the blast radius is a person rather than a defined permission set.",
+    "Attach a service role to each stack so deployments run with scoped permissions."),
+
+  // Logging & retention
+  fsbp("S3.9", ["CC7"],
+    "Server access logging answers who read an object — the question that matters after a suspected leak.",
+    "Enable server access logging on buckets holding meaningful data."),
+  fsbp("S3.13", ["A1", "C1"],
+    "A lifecycle configuration is how a retention policy becomes something you can show rather than assert.",
+    "Add lifecycle rules that match your stated retention period."),
+  fsbp("SSM.6", ["CC7", "CC8"],
+    "Automation that runs unlogged changes the estate with no record of what it did.",
+    "Send SSM Automation output to CloudWatch Logs."),
+  fsbp("StepFunctions.1", ["CC7"],
+    "A workflow with logging off leaves no trace of what ran, in what order, or where it stopped.",
+    "Turn on logging for state machines."),
+
+  // Private connectivity
+  fsbp("EC2.10", ["CC6"],
+    "Interface endpoints keep control-plane traffic off the public internet, which is the network boundary auditors ask you to describe.",
+    "Create the EC2 interface endpoint in VPCs that call the EC2 API."),
+  fsbp("EC2.55", ["CC6"],
+    "Without a private endpoint, image pulls cross the internet to reach the registry.",
+    "Create an interface endpoint for the ECR API."),
+  fsbp("EC2.56", ["CC6"],
+    "The Docker Registry endpoint keeps the image layers themselves on private paths.",
+    "Create an interface endpoint for Docker Registry (ecr.dkr)."),
+  fsbp("EC2.57", ["CC6"],
+    "Systems Manager reaches instances without opening inbound access — only if the private endpoint exists.",
+    "Create an interface endpoint for Systems Manager."),
+  fsbp("EC2.58", ["CC7"],
+    "Incident Manager contacts must be reachable during an incident, including one that affects internet egress.",
+    "Create an interface endpoint for Incident Manager Contacts."),
+  fsbp("EC2.60", ["CC7"],
+    "Incident Manager is the paging path; routing it privately keeps it working when the network is the problem.",
+    "Create an interface endpoint for Incident Manager."),
+
 ];
 
 const byId = new Map<string, MappedCheck>(MAPPING.map((m) => [`${m.standard}:${m.checkId}`, m]));
