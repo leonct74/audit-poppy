@@ -6,6 +6,7 @@
  * leave a button stuck.
  */
 import { useCallback, useRef, useState, type ReactNode } from "react";
+import { confirmMatches } from "./lib/confirm";
 
 export function PendingButton(props: {
   onClick: () => Promise<void>;
@@ -67,7 +68,7 @@ export function TypeToConfirm(props: {
   onCancel: () => void;
 }) {
   const [typed, setTyped] = useState("");
-  const armed = typed.trim() === props.word;
+  const armed = confirmMatches(typed, props.word);
   return (
     <div className="card" style={{ borderColor: "var(--poppy-danger)" }}>
       <h2>Are you sure?</h2>
@@ -76,7 +77,17 @@ export function TypeToConfirm(props: {
         <label>
           Type <span className="mono">{props.word}</span> to confirm — this can't be undone.
         </label>
-        <input value={typed} onChange={(e) => setTyped(e.target.value)} placeholder={props.word} />
+        {/* Every one of these off: the webview capitalising the first letter silently broke
+            this control, and autocorrect on a phrase like "stop auditing" would do it again. */}
+        <input
+          value={typed}
+          onChange={(e) => setTyped(e.target.value)}
+          placeholder={props.word}
+          autoCapitalize="none"
+          autoCorrect="off"
+          autoComplete="off"
+          spellCheck={false}
+        />
       </div>
       <div className="row">
         <button type="button" className="btn" autoFocus onClick={props.onCancel}>
