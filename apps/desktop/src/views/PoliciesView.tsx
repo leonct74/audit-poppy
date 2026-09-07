@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import type { RenderedPolicy } from "@auditpoppy/core";
 import { api, type PoliciesResponse } from "../lib/api";
 import { Banner, Chip, friendlyError, PendingButton } from "../ui";
+import { HelperBanner } from "./HelperBanner";
 
 function PolicyCard(props: {
   policy: RenderedPolicy;
@@ -123,6 +124,7 @@ export function PoliciesView() {
 
   return (
     <>
+      <HelperBanner where="policies" />
       <p className="small muted2">
         The written policies auditors ask for, pre-filled from what AuditPoppy can actually observe in your
         account. Answer the company-specific fields once; the Export tab packages the finished documents.

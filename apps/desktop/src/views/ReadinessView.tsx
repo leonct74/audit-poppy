@@ -10,9 +10,9 @@ import { useCallback, useEffect, useState } from "react";
 import type { GapReport } from "@auditpoppy/core";
 import { api, type CostsResponse, type StatusResponse } from "../lib/api";
 import { host } from "../lib/host";
-import { buildHelperPrompt } from "../lib/helperPrompt";
 import { CHECK_SERVICES } from "../lib/optionCatalog";
 import { Banner, Chip, friendlyError, PendingButton } from "../ui";
+import { HelperBanner } from "./HelperBanner";
 
 const complianceChip = (c: string): { kind: "ok" | "warn" | "danger" | undefined; label: string } => {
   switch (c) {
@@ -28,29 +28,6 @@ const complianceChip = (c: string): { kind: "ok" | "warn" | "danger" | undefined
       return { kind: undefined, label: "not available" };
   }
 };
-
-function HelperBanner() {
-  const [copied, setCopied] = useState(false);
-  return (
-    <Banner kind="info">
-      <div style={{ flex: 1 }}>
-        <div style={{ marginBottom: 6 }}>
-          Not sure what to enable or answer? Copy the helper prompt, paste it into the AI you already use, and
-          add one sentence about your company — it answers with exactly what to tick and type here.
-        </div>
-        <button
-          type="button"
-          className={`btn btn-primary btn-sm${copied ? "" : " poppy-helper-pulse"}`}
-          onClick={() => {
-            void navigator.clipboard.writeText(buildHelperPrompt()).then(() => setCopied(true));
-          }}
-        >
-          {copied ? "Copied ✓" : "Copy the helper prompt"}
-        </button>
-      </div>
-    </Banner>
-  );
-}
 
 function EnablePanel(props: { status: StatusResponse; onStarted: () => void }) {
   const [costs, setCosts] = useState<CostsResponse | null>(null);
@@ -68,7 +45,7 @@ function EnablePanel(props: { status: StatusResponse; onStarted: () => void }) {
 
   return (
     <>
-      <HelperBanner />
+      <HelperBanner where="audit" />
       <div className="card">
         <h2>Start auditing your account</h2>
         <p className="small muted2" style={{ marginTop: 0 }}>

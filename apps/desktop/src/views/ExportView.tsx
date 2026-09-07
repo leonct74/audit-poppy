@@ -16,6 +16,7 @@ import {
 import { api } from "../lib/api";
 import { downloadUrl, host, type PurchaseInfo } from "../lib/host";
 import { Banner, friendlyError, PendingButton } from "../ui";
+import { HelperBanner } from "./HelperBanner";
 
 /** Format the LIVE price from the commerce catalogue (pricing law: the number
  *  never lives in this code — a founder price change needs nothing here). */
@@ -162,6 +163,7 @@ export function ExportView(props: { accountId: string | null }) {
 
       <div className="card">
         <h2>Notes for your auditor</h2>
+        <HelperBanner where="notes" />
         <p className="small muted2" style={{ marginTop: 0 }}>
           Anything your auditor should know that your cloud can't show — one note per line. These appear in the
           package clearly marked as written by you.
