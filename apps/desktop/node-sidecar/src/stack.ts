@@ -82,6 +82,23 @@ export interface DeployInput {
  */
 export async function advanceDeploy(clients: Clients, input: DeployInput): Promise<StackState> {
   const state = await getStackState(clients);
+
+  // A create that failed and rolled back leaves a stack holding NOTHING, and AWS will not let
+  // the name be reused until it is deleted. Deleting it is the documented remedy and destroys
+  // nothing, so the retry the screen offers can actually do it.
+  //
+  // DELETE_FAILED is deliberately NOT handled here, though it looks like the same shape. It
+  // means a previous REMOVAL got part-way, and nothing in this template is DeletionPolicy:
+  // Retain — that is on purpose, so teardown can leave no trace. Finishing that delete could
+  // therefore destroy a customer's evidence bucket, and a button labelled "set up evidence
+  // collection" must never do that. It is a removal decision, so it belongs behind the removal
+  // screen's export gate and type-to-confirm; the Evidence screen says so instead of offering a
+  // retry that silently does nothing (which is what the founder hit on 2026-09-07).
+  if (state.rawStatus === "ROLLBACK_COMPLETE") {
+    await deleteStack(clients);
+    return await getStackState(clients);
+  }
+
   const bucket = evidenceBucketName(input.accountId);
   const tags = stackTags(input.connectionId, input.accountId);
   const templateBody = JSON.stringify(buildTemplate());

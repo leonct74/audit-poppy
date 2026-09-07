@@ -88,15 +88,29 @@ is the part of teardown most likely to break. The certificate it writes
 (`leaves-no-trace.cert.json`) is gitignored: it records the AWS account the run happened in, and
 this repo goes public.
 
-**Certification is BLOCKED on a platform fix (2026-09-07), not on anything in this repo.**
-CloudFormation deletes an `AWS::Lambda::Permission` by calling `lambda:RemovePermission`; the
-host's maintenance session — which is what certify deletes stacks with — is granted only
-`lambda:ListTags` and `lambda:DeleteFunction`. The stack ends in `DELETE_FAILED` and no
-certificate is written. It needs `lambda:RemovePermission` added in `agentspoppy`
-(`packages/broker/src/aws/maintenance.ts`), and it affects every poppy with a scheduled Lambda.
-DESIGN §3 records why no workaround exists on this side. **When an AccessDenied appears, read the
-PRINCIPAL first:** `agentspoppy-<uuid>` is this poppy's session and the fix is our manifest;
-`AgentsPoppyHost-maintenance` is the host's own and the fix is the platform's.
+**Certification is BLOCKED on a platform fix (2026-09-07), not on anything in this repo.** The
+host's maintenance session — which is what certify deletes stacks with — cannot delete three of
+this stack's resource types. CloudFormation deletes a stack with the CALLER's credentials, so
+its session policy (`agentspoppy`, `packages/broker/src/aws/maintenance.ts`,
+`MAINTENANCE_POLICY_STATEMENTS`) has to cover every resource type a poppy's template creates.
+**It is THREE actions, not one** — the first reading of this said `lambda:RemovePermission` alone,
+from a grep that only looked at `lambda:` lines, and that cost a second failed cycle:
+
+| Resource that sticks | Action CloudFormation calls | In the maintenance policy |
+| --- | --- | --- |
+| `AWS::Lambda::Permission` | `lambda:RemovePermission` | ✗ |
+| `AWS::S3::BucketPolicy` | `s3:DeleteBucketPolicy` | ✗ — it has `DeleteBucket`, a different action |
+| `AWS::DynamoDB::Table` | `dynamodb:DescribeTable` (polled to confirm) | ✗ — it has `DeleteTable`, not the poll |
+
+The stack ends in `DELETE_FAILED` and no certificate is written. This is not AuditPoppy-shaped:
+any poppy with a scheduled Lambda, a bucket policy or a table hits it. DESIGN §3 records why no
+workaround exists on this side. **Our own session has all three**, so AuditPoppy's own Remove
+screen clears a stack that certify could not — which is the diagnostic: if the app can delete it
+and the host cannot, the gap is the host's.
+
+**When an AccessDenied appears, read the PRINCIPAL first:** `agentspoppy-<uuid>` is this poppy's
+session and the fix is our manifest; `AgentsPoppyHost-maintenance` is the host's own and the fix
+is the platform's. And read the whole policy, not the lines matching the service you suspect.
 
 ## The three laws that bind every word and grant
 

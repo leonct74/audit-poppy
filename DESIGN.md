@@ -186,10 +186,37 @@ the product.
 
 So the fix belongs in `agentspoppy` (`packages/broker/src/aws/maintenance.ts`), and it affects
 **every poppy with a scheduled Lambda** — a shape the platform encourages. Until it lands,
-certification of this poppy cannot pass. The signature to recognise: `DELETE_FAILED` on an
-`AWS::Lambda::Permission`, with the principal in the error being `AgentsPoppyHost-maintenance`
-rather than `agentspoppy-<uuid>`. **Read the principal first** — it says immediately whether a
-denial is the poppy's problem or the host's.
+certification of this poppy cannot pass. The signature to recognise: `DELETE_FAILED`, with the
+principal in the error being `AgentsPoppyHost-maintenance` rather than `agentspoppy-<uuid>`.
+**Read the principal first** — it says immediately whether a denial is the poppy's problem or the
+host's.
+
+**It is three actions, not one — corrected 2026-09-07 after a second failed cycle.** The first
+reading named `lambda:RemovePermission` alone, off a grep that only looked at `lambda:` lines in
+the maintenance policy. A retry then stuck on three resources at once, and each maps to an action
+the policy does not carry:
+
+| Resource that sticks | What CloudFormation calls | In the maintenance policy |
+| --- | --- | --- |
+| `AWS::Lambda::Permission` | `lambda:RemovePermission` | ✗ |
+| `AWS::S3::BucketPolicy` | `s3:DeleteBucketPolicy` | ✗ — it has `DeleteBucket`, a different action |
+| `AWS::DynamoDB::Table` | `dynamodb:DescribeTable`, polled to confirm the delete | ✗ — it has `DeleteTable`, not the poll |
+
+The general shape, which is the part worth keeping: **CloudFormation deletes a stack with the
+CALLER's credentials**, so the host's session policy has to cover every resource type any poppy's
+template can create — not the types the platform happens to create itself. A policy assembled
+resource-type by resource-type will keep acquiring holes as poppies ship new shapes; the durable
+fix is to derive it from what templates are allowed to contain.
+
+**The state this leaves behind is a dead end the product had to answer for.** A `DELETE_FAILED`
+stack cannot be created over (AWS holds the name) and cannot be updated, so the Evidence screen's
+"you can retry" was offering a button that could not work. Setup now says what is actually true
+and sends the person to the removal screen — deliberately *not* finishing the delete itself,
+because nothing in this template is `DeletionPolicy: Retain` (on purpose, so teardown leaves no
+trace) and finishing it destroys the evidence bucket. That decision belongs behind the removal
+screen's export gate and type-to-confirm, never behind a button labelled "set up". A create that
+merely rolled back (`ROLLBACK_COMPLETE`) is the opposite case — the stack holds nothing, deleting
+it is the documented remedy, and setup now does that for you.
 
 ## 4. Permissions — the first deliberately WIDE poppy, and how it stays honest
 

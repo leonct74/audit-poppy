@@ -97,3 +97,35 @@ describe("stack state is derived from AWS, never from memory (AGENTS.md §5)", (
     assert.equal(clients.fakes.s3.sent("PutObjectCommand").length, 0);
   });
 });
+
+describe("a stack left in a failed state by something OTHER than a create", () => {
+  it("deletes a rolled-back create and starts over — nothing was in it to lose", async () => {
+    const clients = fakeClients();
+    clients.fakes.cloudformation
+      .on("DescribeStacksCommand", describeStacks("ROLLBACK_COMPLETE", ""))
+      .on("DeleteStackCommand", {});
+    await advanceDeploy(clients, deployInput);
+    assert.equal(clients.fakes.cloudformation.sent("DeleteStackCommand").length, 1,
+      "a ROLLBACK_COMPLETE stack holds its own name until it is deleted");
+  });
+
+  it("NEVER deletes a stack whose removal half-finished — that would destroy the evidence bucket", async () => {
+    // Nothing in this template is DeletionPolicy: Retain, on purpose, so teardown can leave no
+    // trace. Finishing a delete is therefore destructive, and the button that reaches here says
+    // "Set up evidence collection". It belongs behind the removal screen's export gate and
+    // type-to-confirm, not here. The founder hit this state on 2026-09-07 after a certify run
+    // failed part-way, and the screen offered a retry that could not do anything.
+    const clients = fakeClients();
+    clients.fakes.cloudformation
+      .on("DescribeStacksCommand", describeStacks("DELETE_FAILED", "code/snapshot-abc.zip"))
+      .on("DeleteStackCommand", {})
+      .on("CreateStackCommand", {});
+    const state = await advanceDeploy(clients, deployInput);
+    assert.equal(state.status, "FAILED");
+    assert.equal(state.rawStatus, "DELETE_FAILED");
+    assert.equal(clients.fakes.cloudformation.sent("DeleteStackCommand").length, 0,
+      "setup must never finish someone's removal for them");
+    assert.equal(clients.fakes.cloudformation.sent("CreateStackCommand").length, 0,
+      "and it cannot create over it either — AWS holds the name");
+  });
+});

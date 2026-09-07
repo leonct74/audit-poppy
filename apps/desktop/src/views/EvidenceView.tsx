@@ -25,7 +25,13 @@ export function EvidenceView(props: { status: StatusResponse; refreshStatus: () 
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  const inProgress = stack.status === "CREATING" || stack.status === "UPDATING" || stack.status === "STORAGE_READY";
+  const inProgress =
+    stack.status === "CREATING" || stack.status === "UPDATING" || stack.status === "STORAGE_READY" ||
+    // A rolled-back create is deleted and re-created for you, so keep polling through it.
+    stack.rawStatus === "ROLLBACK_COMPLETE" || stack.status === "DELETING";
+  // A half-finished REMOVAL is not a setup failure, and retrying setup cannot clear it — only
+  // finishing the removal can, and that deletes evidence, so it stays behind the removal screen.
+  const stuckOnRemoval = stack.rawStatus === "DELETE_FAILED";
 
   const loadBundles = (): void => {
     api
@@ -72,14 +78,27 @@ export function EvidenceView(props: { status: StatusResponse; refreshStatus: () 
             Evidence bucket: <span className="mono">{stack.evidenceBucket}</span>
           </div>
         ) : null}
-        {stack.status === "FAILED" ? (
+        {stack.status === "FAILED" && stuckOnRemoval ? (
+          <Banner kind="danger">
+            <div>
+              A previous removal didn&apos;t finish, so the old setup is still there and a new one
+              can&apos;t be started over it.
+              {stack.statusReason ? ` Your cloud provider said: ${stack.statusReason}` : ""}
+            </div>
+            <div style={{ marginTop: 6 }}>
+              Finish removing it from <strong>Remove AuditPoppy</strong> at the bottom of this tab, then set
+              up evidence collection again. It is deliberately not a button here: finishing that removal
+              deletes the evidence bucket, and that cannot be undone.
+            </div>
+          </Banner>
+        ) : stack.status === "FAILED" ? (
           <Banner kind="danger">
             The setup didn't finish{stack.statusReason ? `: ${stack.statusReason}` : "."} You can retry — it
             picks up from where AWS actually is.
           </Banner>
         ) : null}
         {error ? <Banner kind="danger">{error}</Banner> : null}
-        {stack.status === "ABSENT" || stack.status === "FAILED" ? (
+        {stack.status === "ABSENT" || (stack.status === "FAILED" && !stuckOnRemoval) ? (
           <PendingButton
             className="btn btn-primary"
             busyLabel="Starting…"
