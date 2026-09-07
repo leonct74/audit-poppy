@@ -175,6 +175,7 @@ export function CostsView(props: { status: StatusResponse; refreshStatus: () => 
       <RemovePanel
         accountId={props.status.account}
         exportedThisSession={props.exportedThisSession === true}
+        auditRunning={checksOn}
         refreshStatus={props.refreshStatus}
       />
     </>

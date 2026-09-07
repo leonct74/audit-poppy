@@ -18,7 +18,12 @@ import { useState } from "react";
 import { api, type TeardownResponse } from "../lib/api";
 import { Banner, friendlyError, PendingButton, TypeToConfirm } from "../ui";
 
-export function RemovePanel(props: { accountId: string | null; exportedThisSession: boolean; refreshStatus: () => void }) {
+export function RemovePanel(props: {
+  accountId: string | null;
+  exportedThisSession: boolean;
+  auditRunning: boolean;
+  refreshStatus: () => void;
+}) {
   const [confirming, setConfirming] = useState(false);
   const [acceptedNoExport, setAcceptedNoExport] = useState(false);
   const [report, setReport] = useState<TeardownResponse | null>(null);
@@ -59,6 +64,19 @@ export function RemovePanel(props: { accountId: string | null; exportedThisSessi
         Turns off what AuditPoppy turned on, deletes its stack, and empties and deletes its evidence bucket.
         Anything that was already on before AuditPoppy is left exactly as it was.
       </p>
+
+      {/* The gentler route, offered rather than enforced. Removal turns the services off by
+          itself, so requiring a click here would be a prerequisite the code does not actually
+          have — and inventing one puts a second irreversible-looking button in front of someone
+          who has already decided. Stopping first is genuinely nicer for anyone still unsure,
+          because it is reversible and the bill drops immediately, so it is worth SAYING. */}
+      {props.auditRunning ? (
+        <p className="small muted">
+          Not sure yet? <strong>Stop auditing</strong> above turns the two services off and stops the
+          billing without deleting anything — you can start again later. Removal does that too, but
+          also deletes your evidence, and that part cannot be undone.
+        </p>
+      ) : null}
 
       {/* Export first. A year of evidence is the one thing here that cannot be rebuilt. */}
       {!evidenceSafe ? (
