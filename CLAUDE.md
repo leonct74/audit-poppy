@@ -79,6 +79,15 @@ A ⚠️ warning about a resource the tag index still lists is **not** a failure
 its own reality (Cognito pools for days). Open the linked resource: gone means gone. Never
 "fix" that warning by weakening teardown.
 
+**But one ⚠️ IS worthless-certificate-shaped**, and it looks like a pass (2026-09-07): *"Nothing
+tagged with your app id was found before teardown."* With `footprint before: 0 resources` and
+`stacks deleted: none`, the run proved only that tearing down nothing leaves nothing. A real run
+needs the poppy deployed AND USED first — start the audit, deploy the evidence stack, and capture
+a snapshot so the bucket has **objects in it**, because emptying a versioned bucket with contents
+is the part of teardown most likely to break. The certificate it writes
+(`leaves-no-trace.cert.json`) is gitignored: it records the AWS account the run happened in, and
+this repo goes public.
+
 ## The three laws that bind every word and grant
 
 1. **Naming law (DESIGN §0):** never "SOC 2 compliant/certified" — only a licensed CPA firm

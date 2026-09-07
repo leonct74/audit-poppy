@@ -4,3 +4,9 @@ build/
 *.tsbuildinfo
 **/src/generated/
 .dev-data/
+
+# The certification harness writes this into apps/desktop after a run. It records the AWS
+# account the run happened in — and this repository is going public, so it must never be
+# committed. The naming-law scan would fail the build if it were (it walks .json too), but a
+# guard that fires is a worse outcome than a file that was never staged.
+leaves-no-trace.cert.json
