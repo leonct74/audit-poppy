@@ -21,6 +21,8 @@ export default function App() {
   const [tab, setTab] = useState<Tab>("Readiness");
   const [status, setStatus] = useState<StatusResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Removal deletes the evidence bucket, so it asks for an export first (DESIGN §3).
+  const [exported, setExported] = useState(false);
 
   const refreshStatus = useCallback(() => {
     api
@@ -82,8 +84,8 @@ export default function App() {
           {tab === "Readiness" ? <ReadinessView status={status} refreshStatus={refreshStatus} /> : null}
           {tab === "Evidence" ? <EvidenceView status={status} refreshStatus={refreshStatus} /> : null}
           {tab === "Policies" ? <PoliciesView /> : null}
-          {tab === "Export" ? <ExportView accountId={status.account} /> : null}
-          {tab === "Costs" ? <CostsView status={status} refreshStatus={refreshStatus} /> : null}
+          {tab === "Export" ? <ExportView accountId={status.account} onExported={() => setExported(true)} /> : null}
+          {tab === "Costs" ? <CostsView status={status} refreshStatus={refreshStatus} exportedThisSession={exported} /> : null}
         </>
       ) : null}
       {tab === "Feedback" ? <FeedbackView /> : null}

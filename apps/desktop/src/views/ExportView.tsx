@@ -136,7 +136,7 @@ async function checkLicensed(accountId: string | null): Promise<boolean> {
   }
 }
 
-export function ExportView(props: { accountId: string | null }) {
+export function ExportView(props: { accountId: string | null; onExported?: () => void }) {
   const [licensed, setLicensed] = useState<boolean | null>(null);
   const [notes, setNotes] = useState<string>("");
   const [notesLoaded, setNotesLoaded] = useState(false);
@@ -220,6 +220,7 @@ export function ExportView(props: { accountId: string | null }) {
               try {
                 const res = await api.buildExport(licensed === true);
                 setBuilt({ watermarked: res.watermarked, generatedAt: res.generatedAt });
+                props.onExported?.();
                 await host.openExternal(downloadUrl(res.pdfToken));
                 await host.openExternal(downloadUrl(res.jsonToken));
               } catch (err) {

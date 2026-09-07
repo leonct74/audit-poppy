@@ -142,6 +142,18 @@ deletes the stack, and empties/deletes the evidence bucket **only after an expli
 type-to-confirm** — evidence is the one thing a user may want to outlive the poppy, so the
 export flow is offered first. The certification harness must pass with these semantics.
 
+**Built as a SCREEN on 2026-09-07, five days late.** `/teardown` existed from day one because
+the host calls it on uninstall, and everyone — including the tests and the smoke loop, which
+drive the route directly — mistook that for the feature being done. Nothing in the app ever
+called it: a user could stop the audit but had no way to remove the bucket, stack and table
+short of uninstalling the extension, and the founder went looking for the button and found
+none. The lesson generalises past this bug: **a route the tests can reach is not a feature the
+user can reach**, and every acceptance check here drove the backend. The removal panel now sits
+on the Costs screen under the off switch — the two ways out, in the place someone looks for
+either — and enforces both of the safeguards above: it will not arm until the package has been
+exported or the user explicitly says they do not want it, and the confirmation names the cloud
+account so nobody removes from the wrong one.
+
 ## 4. Permissions — the first deliberately WIDE poppy, and how it stays honest
 
 AuditPoppy needs to *see everything* (that is the product) and *change almost nothing*:

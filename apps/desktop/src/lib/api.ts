@@ -94,4 +94,7 @@ export const api = {
   buildExport: (licensed: boolean) =>
     host.invokeBackend<ExportResponse>({ method: "POST", path: "/export", body: { licensed } }),
   disableChecks: () => host.invokeBackend<TeardownResponse>({ method: "POST", path: "/disable-checks" }),
+  /** Full removal: disable what was ours, delete the stack, empty and delete the evidence
+   *  bucket. The host also calls this on uninstall — here it is the user's own way out. */
+  teardown: () => host.invokeBackend<TeardownResponse>({ method: "POST", path: "/teardown" }),
 };

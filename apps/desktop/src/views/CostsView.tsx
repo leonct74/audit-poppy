@@ -8,6 +8,7 @@
 import { useEffect, useState } from "react";
 import { api, type CostsResponse, type StatusResponse } from "../lib/api";
 import { Banner, Chip, friendlyError, PendingButton, TypeToConfirm } from "../ui";
+import { RemovePanel } from "./RemovePanel";
 
 const SERVICE_LABEL: Record<string, string> = {
   config: "AWS Config — the change record",
@@ -15,7 +16,7 @@ const SERVICE_LABEL: Record<string, string> = {
   evidence: "Evidence bucket + monthly snapshot",
 };
 
-export function CostsView(props: { status: StatusResponse; refreshStatus: () => void }) {
+export function CostsView(props: { status: StatusResponse; refreshStatus: () => void; exportedThisSession?: boolean }) {
   const [costs, setCosts] = useState<CostsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
@@ -168,6 +169,14 @@ export function CostsView(props: { status: StatusResponse; refreshStatus: () => 
         Your account-wide cloud bill (all services, month to date) lives in the AgentsPoppy Dashboard — this
         screen totals only what AuditPoppy itself would enable.
       </p>
+
+      {/* Removal lives below the off switch: stopping the audit and removing the app are the two
+          ways out, and someone looking for either looks here. */}
+      <RemovePanel
+        accountId={props.status.account}
+        exportedThisSession={props.exportedThisSession === true}
+        refreshStatus={props.refreshStatus}
+      />
     </>
   );
 }
