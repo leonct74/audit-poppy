@@ -18,6 +18,7 @@
  *   echo "127.0.0.1 aws.local auditpoppy-evidence-111122223333.aws.local" | sudo tee -a /etc/hosts
  */
 import { lookup } from "node:dns/promises";
+import { request as httpRequest } from "node:http";
 import { spawn } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -65,6 +66,21 @@ async function api(method, path, body) {
   return json;
 }
 const mockState = async () => (await fetch(`${MOCK}/__state`)).json();
+
+/** GET /status over raw http, so headers fetch() refuses to send can be tested. */
+function rawStatus(headers) {
+  return new Promise((resolve, reject) => {
+    const req = httpRequest(
+      { host: "127.0.0.1", port: Number(new URL(API).port), path: "/status", method: "GET", headers },
+      (res) => {
+        res.resume();
+        res.on("end", () => resolve(res.statusCode));
+      },
+    );
+    req.on("error", reject);
+    req.end();
+  });
+}
 
 async function waitFor(what, fn, timeoutMs = 60_000, pollMs = 500) {
   const deadline = Date.now() + timeoutMs;
@@ -146,6 +162,19 @@ async function scenarioA() {
   console.log("\n━━ Scenario A: clean account — the full loop ━━");
   await fetch(`${MOCK}/__reset`, { method: "POST", body: JSON.stringify({ preEnabled: false }) });
   const cwd = await startSidecar("clean");
+
+  // Who may talk to this port at all. The unit tests pin the predicate; this pins the WIRING —
+  // that the check actually runs before any route does, on the real server, over real HTTP.
+  const rejected = await fetch(`${API}/status`, { headers: { origin: "https://evil.example" } });
+  check("guard: a request carrying an Origin is refused — no browser drives this port", rejected.status === 403);
+  // fetch() will NOT send a Host we choose — it is a forbidden header, silently dropped — so a
+  // fetch-based version of this check passes while proving nothing. Raw http can set it, which
+  // is also what a rebinding browser does.
+  const rebound = await rawStatus({ host: "attacker.example" });
+  check("guard: a rebound hostname is refused even with no Origin", rebound === 403, `got ${rebound}`);
+  check("guard: the host's own loopback call still gets through", (await rawStatus({})) === 200);
+  const teardownAttempt = await fetch(`${API}/teardown`, { method: "POST", headers: { origin: "null" } });
+  check("guard: the destructive route is behind the same check", teardownAttempt.status === 403);
 
   const status0 = await api("GET", "/status");
   check("status: resolves the account from STS", status0.account === "111122223333");

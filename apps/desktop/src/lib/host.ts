@@ -14,6 +14,11 @@ export interface BackendInvoke {
   body?: unknown;
 }
 
+/** Scopes a purchase to something the poppy chooses, rather than to whoever paid. */
+export interface PurchaseOptions {
+  target?: string;
+}
+
 export interface PurchaseInfo {
   productId: string;
   name: string;
@@ -49,6 +54,11 @@ if (typeof window !== "undefined") {
     if (res.ok) p.resolve(res.result);
     else p.reject(new Error(res.error ?? "host call failed"));
   });
+}
+
+/** Drop the options object entirely when there is no target to send. */
+function commerceParams(productId: string, options?: PurchaseOptions): unknown[] {
+  return options?.target ? [productId, options] : [productId];
 }
 
 function call<T>(method: string, ...params: unknown[]): Promise<T> {
@@ -100,10 +110,20 @@ export const host = {
   },
   notify: (n: { title: string; body?: string }): Promise<void> =>
     inHost ? call("notify", n) : Promise.resolve(console.info(`[notify] ${n.title}`, n.body ?? "")),
-  purchaseInfo: (productId: string): Promise<PurchaseInfo> => call("purchaseInfo", productId),
-  buyProduct: (productId: string): Promise<{ owned: boolean }> => call("buyProduct", productId),
-  isPurchased: (productId: string): Promise<boolean> => (inHost ? call("isPurchased", productId) : Promise.resolve(false)),
-  manageSubscription: (productId: string): Promise<void> => call("manageSubscription", productId),
+  // Every commerce call takes the same optional `target` — the key the entitlement is filed
+  // under. AuditPoppy always passes the cloud account id, so a licence follows the ACCOUNT
+  // being audited rather than the install that paid for it: reinstalling AgentsPoppy, or moving
+  // to a new machine, keeps it, which is what the Export screen already promises in words.
+  // Appended only when present, mirroring the platform bridge — a trailing `undefined` param is
+  // not the same request as no param.
+  purchaseInfo: (productId: string, options?: PurchaseOptions): Promise<PurchaseInfo> =>
+    call("purchaseInfo", ...commerceParams(productId, options)),
+  buyProduct: (productId: string, options?: PurchaseOptions): Promise<{ owned: boolean }> =>
+    call("buyProduct", ...commerceParams(productId, options)),
+  isPurchased: (productId: string, options?: PurchaseOptions): Promise<boolean> =>
+    inHost ? call("isPurchased", ...commerceParams(productId, options)) : Promise.resolve(false),
+  manageSubscription: (productId: string, options?: PurchaseOptions): Promise<void> =>
+    call("manageSubscription", ...commerceParams(productId, options)),
 };
 
 /** The broker serves our tab and downloads from one origin; a one-shot

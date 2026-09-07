@@ -29,16 +29,45 @@ describe("the manifest and the declared permission set", () => {
     assert.deepEqual(manifest.permissionSet, JSON.parse(JSON.stringify(permissionSet())));
   });
 
-  it("every unconfined grant carries a human reason", () => {
+  it("EVERY grant carries a human reason — including the narrow writes", () => {
+    // This used to exempt anything scoped to our own stack, on the theory that a narrow grant
+    // explains itself. It does not: the approval screen shows the person "iam: CreateRole,
+    // DeleteRole, PutRolePolicy…" either way, and for a product whose whole pitch is legible
+    // permissions, having the WRITES be the unexplained ones was exactly backwards. Every grant
+    // that appears in front of a human says what it is for, in their words.
     for (const grant of permissionSet().grants) {
-      const confined = grant.resourceScope.includes(STACK_NAME) || grant.resourceScope.includes("auditpoppy-");
-      if (!confined) {
-        assert.ok(
-          grant.reason && grant.reason.length > 20,
-          `${grant.service} @ ${grant.resourceScope} needs a reason`,
-        );
-      }
+      assert.ok(
+        grant.reason && grant.reason.length > 20,
+        `${grant.service} @ ${grant.resourceScope} needs a reason`,
+      );
     }
+  });
+
+  it("never grants a way to remove the limit the platform puts on it", () => {
+    // The host attaches a permissions boundary to the role our stack creates, and the platform's
+    // own security spec has a step outstanding that makes that boundary mandatory. Holding
+    // DeleteRolePermissionsBoundary would step around that fix in a single call — create the
+    // role bounded, then strip the boundary off. Putting a boundary ON is fine; taking one off
+    // is not, and no legitimate flow here needs to.
+    for (const grant of permissionSet().grants) {
+      assert.ok(
+        !grant.actions.includes("DeleteRolePermissionsBoundary"),
+        "removing a permissions boundary is never AuditPoppy's to do",
+      );
+    }
+  });
+
+  it("grants no action it does not call — an unused write is only a liability", () => {
+    // lambda:InvokeFunction was granted and never used: the monthly schedule invokes the
+    // function, and EventBridge's own permission to do so lives in the template. A grant nobody
+    // exercises cannot fail loudly when it is removed, so it survives by inertia until someone
+    // finds a use for it that the person who approved it never agreed to.
+    const source = readFileSync(new URL("./index.ts", import.meta.url), "utf8");
+    for (const grant of permissionSet().grants) {
+      if (grant.service !== "lambda") continue;
+      assert.ok(!grant.actions.includes("InvokeFunction"), "nothing here invokes a function");
+    }
+    assert.ok(!/InvokeCommand/.test(source), "if this fires, the grant above is needed again");
   });
 
   it("reasons explain purpose in plain words, never scope mechanics", () => {

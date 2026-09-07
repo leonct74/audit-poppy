@@ -29,13 +29,14 @@ import { makeClients } from "./clients";
 import { captureBaseline, enableChecks } from "./enable";
 import { buildExport, evidenceSummaries } from "./exporter";
 import { LedgerStore } from "./ledgerStore";
+import { isLocalRequest } from "./localOnly";
 import { observePosture, estimateResourceCount } from "./posture";
 import { fetchUnitPrices } from "./pricing";
 import { buildLiveGapReport, fetchReadiness } from "./readiness";
 import { advanceDeploy, getStackState } from "./stack";
 import { recordScan, StateStore } from "./stateStore";
 import { disableChecksOnly, runTeardown } from "./teardown";
-import { evidenceBucketName } from "./template";
+import { evidenceBucketName, evidenceBucketRef } from "./template";
 import { lambdaCodeKey, lambdaZipBase64 } from "./generated/lambda-bundle";
 
 const env = resolveEnv();
@@ -151,11 +152,16 @@ route("GET", "/health", async () => ({ ok: true }));
 route("GET", "/status", async () => {
   const account = await accountId().catch(() => undefined);
   const ledger = ledgerStore.read();
-  const state = stateStore.read();
   const [readiness, stack] = await Promise.all([
     account ? fetchReadiness(clients, ledger).catch((err) => ({ error: errorMessage(err) })) : null,
     getStackState(clients).catch((err) => ({ status: "ABSENT" as const, statusReason: errorMessage(err) })),
   ]);
+  // Read the persisted state AFTER those awaits, not before. The enable flow writes
+  // securityHubEnabledAt and only then marks enableOp finished; `enableOp` is read when this
+  // object is built, so a state snapshot taken before a second of network time could report
+  // "enable finished" alongside a trial clock that had not started yet. The smoke loop caught
+  // it as an intermittent — one poll in maybe twenty — which is how a UI would have seen it too.
+  const state = stateStore.read();
   const trial = state.securityHubEnabledAt ? freeTrial(state.securityHubEnabledAt, new Date()) : undefined;
   const warmingUp = readiness && "standards" in readiness ? isWarmingUp(readiness.standards) : false;
   return {
@@ -236,7 +242,7 @@ route("POST", "/snapshot", async () => {
   const key = bundleKey(new Date(bundle.capturedAt));
   await clients.s3.send(
     new PutObjectCommand({
-      Bucket: evidenceBucketName(account),
+      ...evidenceBucketRef(account),
       Key: key,
       Body: JSON.stringify(bundle),
       ContentType: "application/json",
@@ -329,6 +335,14 @@ async function readBody(req: IncomingMessage): Promise<unknown> {
 }
 
 const server = createServer(async (req, res) => {
+  // Before anything is parsed, decide whether this caller may be here at all. See localOnly.ts
+  // for what this closes (the whole browser class) and what it does not (a peer process, which
+  // needs a secret only the host can issue — noted at the listen() call below).
+  if (!isLocalRequest(req.headers)) {
+    json(res, 403, { ok: false, message: "forbidden" });
+    return;
+  }
+
   const url = new URL(req.url ?? "/", "http://127.0.0.1");
 
   // One-shot download route (opened via the system browser through /ext-dl/).

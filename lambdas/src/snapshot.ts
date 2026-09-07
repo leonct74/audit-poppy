@@ -44,6 +44,12 @@ const WORSE: Record<string, number> = { FAILED: 0, WARNING: 1, NOT_AVAILABLE: 2,
 export async function handler(): Promise<{ ok: boolean; key?: string }> {
   const bucket = process.env.EVIDENCE_BUCKET;
   if (!bucket) throw new Error("EVIDENCE_BUCKET is not set");
+  // Assert the owner on the write. The bucket name is derived from the account id, and S3's
+  // namespace is global — so without this, a bucket of that name pre-created in someone ELSE's
+  // account would silently receive this account's evidence. The template already injects
+  // AWS_ACCOUNT_ID for the bundle body; it does double duty here.
+  const expectedOwner = process.env.AWS_ACCOUNT_ID;
+  if (!expectedOwner) throw new Error("AWS_ACCOUNT_ID is not set");
   const capturedAt = new Date();
 
   // 1. Standards + their subscription state.
@@ -132,7 +138,7 @@ export async function handler(): Promise<{ ok: boolean; key?: string }> {
   const bundle = {
     schemaVersion: 1,
     capturedAt: iso,
-    accountId: process.env.AWS_ACCOUNT_ID ?? "",
+    accountId: expectedOwner,
     region: process.env.AWS_REGION ?? "",
     standards: subs.map((s) => ({ standard: s.standard, status: s.status })),
     controls: [...controls.values()],
@@ -143,6 +149,7 @@ export async function handler(): Promise<{ ok: boolean; key?: string }> {
   await s3.send(
     new PutObjectCommand({
       Bucket: bucket,
+      ExpectedBucketOwner: expectedOwner,
       Key: key,
       Body: JSON.stringify(bundle),
       ContentType: "application/json",

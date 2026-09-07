@@ -24,9 +24,41 @@ export const SNAPSHOT_FN_NAME = `${STACK_NAME}-snapshot`;
 export const SNAPSHOT_ROLE_NAME = `${STACK_NAME}-snapshot-role`;
 export const SCHEDULE_RULE_NAME = `${STACK_NAME}-snapshot-monthly`;
 
-/** The evidence bucket's deterministic name for an account. */
+/**
+ * The evidence bucket's deterministic name for an account.
+ *
+ * Deterministic on purpose — every call site derives the same name without a lookup — but S3's
+ * namespace is GLOBAL and its ARNs carry no account id, so this name is guessable by anyone who
+ * knows the account id, and our own `arn:aws:s3:::auditpoppy-*` grant matches it in ANY account.
+ * Prefer `evidenceBucketRef` for calls: see why below.
+ */
 export function evidenceBucketName(accountId: string): string {
   return `${BUCKET_PREFIX}evidence-${accountId}`;
+}
+
+/**
+ * The bucket, PLUS the owner every S3 call must assert — spread this into the command input.
+ *
+ * WHY THE PAIR IS ONE VALUE. An attacker who learns the account id (cheap: it is in every ARN)
+ * can pre-create `auditpoppy-evidence-<theirs-named-after-yours>` in THEIR account and allow
+ * this account as a principal. Our stack then fails to create the bucket it expected to own —
+ * but the READ path does not check that the stack is healthy, so `evidenceSummaries` would
+ * happily parse attacker-authored JSON and carry its `capturedAt`, standards and pass/fail
+ * totals into the export handed to an auditor. Fabricated evidence in the deliverable is the
+ * worst outcome this product has.
+ *
+ * `ExpectedBucketOwner` closes it: S3 returns 403 before a byte moves when the bucket is not
+ * owned by this account. It is one field, and the whole bug is forgetting it at one call site —
+ * so the name and the owner are returned together and spread together, and a call site cannot
+ * take one without the other.
+ */
+export interface EvidenceBucketRef {
+  Bucket: string;
+  ExpectedBucketOwner: string;
+}
+
+export function evidenceBucketRef(accountId: string): EvidenceBucketRef {
+  return { Bucket: evidenceBucketName(accountId), ExpectedBucketOwner: accountId };
 }
 
 /** Monthly, 03:10 UTC on the 1st — quiet hours, well clear of DST edges. */

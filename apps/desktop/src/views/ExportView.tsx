@@ -26,22 +26,35 @@ function formatPrice(price: NonNullable<PurchaseInfo["price"]>): string {
   return price.kind === "subscription" ? `${amount}/${price.interval === "month" ? "month" : "year"}` : amount;
 }
 
-function BuyButton(props: { onChanged: () => void }) {
+/**
+ * The paid licence, filed against the CLOUD ACCOUNT — never against whoever paid.
+ *
+ * The purchase is scoped with `target: accountId`, the same key the free small-company licence
+ * is granted under and the same key `checkLicensed` reads back. Without it a purchase keys on
+ * the buyer's install, so reinstalling AgentsPoppy — or auditing the same account from a second
+ * machine — would silently lose a licence somebody paid for, which is precisely the failure the
+ * account key exists to prevent, and it is the promise this screen already makes in words.
+ *
+ * So it renders nothing until the account id is known: better no button for a moment than a
+ * purchase filed under the wrong key, which nothing later can correct.
+ */
+function BuyButton(props: { onChanged: () => void; accountId: string | null }) {
   const [info, setInfo] = useState<PurchaseInfo | null>(null);
+  const { accountId } = props;
   useEffect(() => {
-    if (!host.inHost) return;
+    if (!host.inHost || !accountId) return;
     host
-      .purchaseInfo(BUSINESS_PRODUCT_ID)
+      .purchaseInfo(BUSINESS_PRODUCT_ID, { target: accountId })
       .then(setInfo)
       .catch(() => setInfo(null));
-  }, []);
-  if (!info || info.owned) return null;
+  }, [accountId]);
+  if (!accountId || !info || info.owned) return null;
   return (
     <PendingButton
       className="btn btn-primary btn-sm"
       busyLabel="Opening checkout…"
       onClick={async () => {
-        const res = await host.buyProduct(BUSINESS_PRODUCT_ID);
+        const res = await host.buyProduct(BUSINESS_PRODUCT_ID, { target: accountId });
         if (res.owned) props.onChanged();
       }}
     >
@@ -93,7 +106,7 @@ function LicensePanel(props: { licensed: boolean | null; onChanged: () => void; 
         </tbody>
       </table>
       <div className="row" style={{ marginTop: 10 }}>
-        <BuyButton onChanged={props.onChanged} />
+        <BuyButton onChanged={props.onChanged} accountId={props.accountId} />
         <button
           type="button"
           className="btn btn-sm"
@@ -105,7 +118,7 @@ function LicensePanel(props: { licensed: boolean | null; onChanged: () => void; 
           <button
             type="button"
             className="btn btn-ghost btn-sm"
-            onClick={() => void host.manageSubscription(BUSINESS_PRODUCT_ID)}
+            onClick={() => void host.manageSubscription(BUSINESS_PRODUCT_ID, { target: props.accountId ?? undefined })}
           >
             Manage billing
           </button>
@@ -123,7 +136,9 @@ function LicensePanel(props: { licensed: boolean | null; onChanged: () => void; 
  * Either one clears the watermark. Both fail closed: any error means "not licensed".
  */
 async function checkLicensed(accountId: string | null): Promise<boolean> {
-  const viaHost = await host.isPurchased(BUSINESS_PRODUCT_ID).catch(() => false);
+  const viaHost = await host
+    .isPurchased(BUSINESS_PRODUCT_ID, { target: accountId ?? undefined })
+    .catch(() => false);
   if (viaHost) return true;
   if (!accountId) return false;
   try {

@@ -141,6 +141,16 @@ PRINCIPAL first:** `agentspoppy-<uuid>` is this poppy's session and the fix is o
   Mocked tests prove the logic; only a real account proves the contract.**
 - ✅ Mapping expanded to 2026.09.1 (121 entries) after the live report showed more FAILING
   controls outside the criteria than inside. On that account: 0 failures now unmapped.
+- ✅ **Security-reviewed (2026-09-07)** — the whole poppy, not just the diff, because it is about
+  to be published. Three findings confirmed and fixed here (loopback port had no caller check;
+  no S3 call asserted the bucket owner; the paid licence keyed on the buyer instead of the
+  audited account), one rejected, plus a `/status` read-consistency race the smoke loop caught.
+  DESIGN §4 and §6 carry the detail. **Two platform items came out of it and are NOT ours to
+  patch:** the sidecar cannot authenticate a local peer alone (the broker forwards with no auth
+  header — `registry.ts`, which is *not* a §4 enforcement-point file), and the permission-set
+  escalation is the platform's own tracked "2026-08-26 fault A, step 3" (the mandatory
+  permissions boundary). We removed `iam:DeleteRolePermissionsBoundary` so we cannot step around
+  that fix when it lands.
 - Next: phase-0 teardown + cost readout (09-09) → `npm run certify` and the machine-gate
   check → platform-side items (commerce product, deploy the signup, catalogue submission)
   — DESIGN §12 "What remains before listing". Still unexercised live: teardown against a

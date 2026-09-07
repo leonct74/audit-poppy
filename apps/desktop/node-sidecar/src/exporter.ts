@@ -25,7 +25,7 @@ import type { Clients } from "./clients";
 import { observePosture } from "./posture";
 import { buildLiveGapReport } from "./readiness";
 import type { SidecarState } from "./stateStore";
-import { evidenceBucketName } from "./template";
+import { evidenceBucketRef, type EvidenceBucketRef } from "./template";
 
 interface ListOutput {
   Contents?: { Key?: string; Size?: number }[];
@@ -35,13 +35,13 @@ interface ListOutput {
 
 /** Index the evidence bucket's bundles: keys + sizes, newest last (key order). */
 export async function listEvidence(clients: Clients, accountId: string): Promise<{ key: string; sizeBytes: number }[]> {
-  const bucket = evidenceBucketName(accountId);
+  const ref = evidenceBucketRef(accountId);
   const out: { key: string; sizeBytes: number }[] = [];
   let ContinuationToken: string | undefined;
   try {
     do {
       const res = (await clients.s3.send(
-        new ListObjectsV2Command({ Bucket: bucket, Prefix: EVIDENCE_PREFIX, ContinuationToken }),
+        new ListObjectsV2Command({ ...ref, Prefix: EVIDENCE_PREFIX, ContinuationToken }),
       )) as ListOutput;
       for (const item of res.Contents ?? []) {
         if (item.Key) out.push({ key: item.Key, sizeBytes: item.Size ?? 0 });
@@ -54,9 +54,13 @@ export async function listEvidence(clients: Clients, accountId: string): Promise
   return out.sort((a, b) => a.key.localeCompare(b.key));
 }
 
-async function readBundle(clients: Clients, bucket: string, key: string): Promise<EvidenceBundle | undefined> {
+async function readBundle(
+  clients: Clients,
+  ref: EvidenceBucketRef,
+  key: string,
+): Promise<EvidenceBundle | undefined> {
   try {
-    const res = (await clients.s3.send(new GetObjectCommand({ Bucket: bucket, Key: key }))) as {
+    const res = (await clients.s3.send(new GetObjectCommand({ ...ref, Key: key }))) as {
       Body?: { transformToString(): Promise<string> };
     };
     const text = await res.Body?.transformToString();
@@ -70,12 +74,12 @@ async function readBundle(clients: Clients, bucket: string, key: string): Promis
 
 /** Bundle summaries for the Evidence screen (reads a bounded number of bodies). */
 export async function evidenceSummaries(clients: Clients, accountId: string, maxBodies = 24): Promise<EvidenceBundleSummary[]> {
-  const bucket = evidenceBucketName(accountId);
+  const ref = evidenceBucketRef(accountId);
   const listed = await listEvidence(clients, accountId);
   const recent = listed.slice(-maxBodies);
   const summaries: EvidenceBundleSummary[] = [];
   for (const item of recent) {
-    const bundle = await readBundle(clients, bucket, item.key);
+    const bundle = await readBundle(clients, ref, item.key);
     if (bundle) summaries.push(summarizeBundle(item.key, bundle, item.sizeBytes));
   }
   return summaries;

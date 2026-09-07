@@ -22,7 +22,7 @@ import { DELIVERY_CHANNEL_NAME, RECORDER_NAME } from "./enable";
 import type { LedgerStore } from "./ledgerStore";
 import { fetchEnabledStandards } from "./readiness";
 import { deleteStack, getStackState } from "./stack";
-import { evidenceBucketName } from "./template";
+import { evidenceBucketRef, type EvidenceBucketRef } from "./template";
 
 export interface TeardownReport {
   disabled: LedgerService[];
@@ -41,11 +41,11 @@ interface VersionsOutput {
   NextVersionIdMarker?: string;
 }
 
-async function emptyBucket(clients: Clients, bucket: string): Promise<void> {
+async function emptyBucket(clients: Clients, ref: EvidenceBucketRef): Promise<void> {
   for (;;) {
     let page: VersionsOutput;
     try {
-      page = (await clients.s3.send(new ListObjectVersionsCommand({ Bucket: bucket, MaxKeys: 1000 }))) as VersionsOutput;
+      page = (await clients.s3.send(new ListObjectVersionsCommand({ ...ref, MaxKeys: 1000 }))) as VersionsOutput;
     } catch (err) {
       if (isNotFound(err)) return; // bucket already gone
       throw err;
@@ -54,7 +54,7 @@ async function emptyBucket(clients: Clients, bucket: string): Promise<void> {
       .filter((v): v is { Key: string; VersionId: string } => !!v.Key && !!v.VersionId)
       .map((v) => ({ Key: v.Key, VersionId: v.VersionId }));
     if (objects.length === 0) return;
-    await clients.s3.send(new DeleteObjectsCommand({ Bucket: bucket, Delete: { Objects: objects, Quiet: true } }));
+    await clients.s3.send(new DeleteObjectsCommand({ ...ref, Delete: { Objects: objects, Quiet: true } }));
     if (!page.IsTruncated) return;
   }
 }
@@ -109,9 +109,10 @@ export async function runTeardown(clients: Clients, store: LedgerStore, input: T
   await disableServices(clients, ours, report);
 
   // Empty the evidence bucket (every version + delete marker), then the stack.
-  const bucket = evidenceBucketName(input.accountId);
+  // Never empty a bucket this account does not own — a sniped name would otherwise turn our
+  // own teardown into a delete-everything call against a stranger's bucket.
   try {
-    await emptyBucket(clients, bucket);
+    await emptyBucket(clients, evidenceBucketRef(input.accountId));
     report.bucketEmptied = true;
   } catch (err) {
     report.problems.push(`empty evidence bucket: ${errorMessage(err)}`);

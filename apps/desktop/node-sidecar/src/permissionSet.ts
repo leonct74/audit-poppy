@@ -96,14 +96,16 @@ export function permissionSet() {
       grant("cloudformation", [
         "CreateStack", "UpdateStack", "DeleteStack", "DescribeStacks", "DescribeStackEvents",
         "DescribeStackResources", "ListStackResources", "GetTemplate", "TagResource",
-      ], stack),
+      ], stack,
+        "Creates, updates and removes AuditPoppy's own set of resources as one unit, so removing it later takes everything with it and leaves nothing behind. It covers only AuditPoppy's own set."),
       grant("cloudformation", ["ValidateTemplate", "GetTemplateSummary"], "*",
         "Before deploying, asks your cloud provider to double-check its own deployment plan, so a mistake is caught before anything is created in your account."),
       grant("iam", [
         "CreateRole", "DeleteRole", "GetRole", "TagRole", "UntagRole",
         "PutRolePolicy", "DeleteRolePolicy", "GetRolePolicy", "ListRolePolicies",
-        "ListAttachedRolePolicies", "PassRole", "PutRolePermissionsBoundary", "DeleteRolePermissionsBoundary",
-      ], role),
+        "ListAttachedRolePolicies", "PassRole", "PutRolePermissionsBoundary",
+      ], role,
+        "Creates the one helper identity that reads your findings on a schedule, and removes it again when you remove AuditPoppy. It covers only that identity — it cannot touch any other user or role in your account."),
       grant("iam", ["CreateServiceLinkedRole", "DeleteServiceLinkedRole", "GetServiceLinkedRoleDeletionStatus"], configSlr,
         "AWS Config needs its own AWS-defined helper role to read your configuration; this creates exactly that role when Config is turned on, and removes it at teardown if AuditPoppy created it."),
       // PassRole on the SLR, separately from the stack roles above. Creating the role is not enough:
@@ -126,24 +128,30 @@ export function permissionSet() {
       grant("lambda", [
         "CreateFunction", "DeleteFunction", "GetFunction", "GetFunctionConfiguration",
         "UpdateFunctionCode", "UpdateFunctionConfiguration", "AddPermission", "RemovePermission",
-        "InvokeFunction", "TagResource", "UntagResource", "ListTags",
-      ], fn),
+        "TagResource", "UntagResource", "ListTags",
+      ], fn,
+        "Installs the small program that takes your monthly evidence snapshot, and removes it at teardown. It covers only that one program — AuditPoppy cannot read or change anything else that runs in your account."),
       grant("s3", [
         "CreateBucket", "DeleteBucket", "PutBucketPolicy", "GetBucketPolicy", "DeleteBucketPolicy",
         "PutEncryptionConfiguration", "GetEncryptionConfiguration", "PutBucketPublicAccessBlock",
         "GetBucketPublicAccessBlock", "PutBucketTagging", "PutBucketVersioning", "GetBucketVersioning",
         "PutLifecycleConfiguration", "GetLifecycleConfiguration", "ListBucket", "ListBucketVersions", "HeadBucket",
-      ], buckets),
-      grant("s3", ["GetObject", "PutObject", "DeleteObject", "GetObjectVersion", "DeleteObjectVersion"], objects),
+      ], buckets,
+        "Creates the storage that holds your evidence — encrypted, versioned, closed to the public — and empties and removes it at teardown. It covers only AuditPoppy's own storage, never your other buckets."),
+      grant("s3", ["GetObject", "PutObject", "DeleteObject", "GetObjectVersion", "DeleteObjectVersion"], objects,
+        "Writes each evidence snapshot into that storage and reads it back when you build an export. It covers only what AuditPoppy itself put there."),
       grant("dynamodb", [
         "CreateTable", "DeleteTable", "DescribeTable", "TagResource", "UntagResource", "ListTagsOfResource",
         "GetItem", "PutItem", "UpdateItem", "DeleteItem", "Query", "Scan", "BatchWriteItem",
-      ], table),
+      ], table,
+        "Keeps AuditPoppy's own record of what it has collected and when, so a report can be rebuilt without re-reading everything. It covers only AuditPoppy's own record."),
       grant("events", [
         "PutRule", "DeleteRule", "DescribeRule", "PutTargets", "RemoveTargets", "ListTargetsByRule",
         "TagResource", "UntagResource",
-      ], rule),
-      grant("logs", ["CreateLogGroup", "DeleteLogGroup", "PutRetentionPolicy", "TagResource"], logs),
+      ], rule,
+        "Sets the monthly timer that takes your evidence snapshot without you having to remember, and cancels it at teardown. It covers only AuditPoppy's own timer."),
+      grant("logs", ["CreateLogGroup", "DeleteLogGroup", "PutRetentionPolicy", "TagResource"], logs,
+        "Keeps a short-lived record of whether each monthly snapshot ran, so a silent failure is visible, and deletes that record at teardown. It covers only AuditPoppy's own."),
 
       // ---- The wide READ: the estate, for the estimate + the policy pack ----
       grant("iam", ["GetAccountSummary", "GetAccountPasswordPolicy", "ListUsers", "ListMFADevices"], "*",

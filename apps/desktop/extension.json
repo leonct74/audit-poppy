@@ -82,7 +82,8 @@
           "GetTemplate",
           "TagResource"
         ],
-        "resourceScope": "arn:aws:cloudformation:*:*:stack/AuditPoppyStack/*"
+        "resourceScope": "arn:aws:cloudformation:*:*:stack/AuditPoppyStack/*",
+        "reason": "Creates, updates and removes AuditPoppy's own set of resources as one unit, so removing it later takes everything with it and leaves nothing behind. It covers only AuditPoppy's own set."
       },
       {
         "service": "cloudformation",
@@ -107,10 +108,10 @@
           "ListRolePolicies",
           "ListAttachedRolePolicies",
           "PassRole",
-          "PutRolePermissionsBoundary",
-          "DeleteRolePermissionsBoundary"
+          "PutRolePermissionsBoundary"
         ],
-        "resourceScope": "arn:aws:iam::*:role/AuditPoppyStack-*"
+        "resourceScope": "arn:aws:iam::*:role/AuditPoppyStack-*",
+        "reason": "Creates the one helper identity that reads your findings on a schedule, and removes it again when you remove AuditPoppy. It covers only that identity — it cannot touch any other user or role in your account."
       },
       {
         "service": "iam",
@@ -169,12 +170,12 @@
           "UpdateFunctionConfiguration",
           "AddPermission",
           "RemovePermission",
-          "InvokeFunction",
           "TagResource",
           "UntagResource",
           "ListTags"
         ],
-        "resourceScope": "arn:aws:lambda:*:*:function:AuditPoppyStack-*"
+        "resourceScope": "arn:aws:lambda:*:*:function:AuditPoppyStack-*",
+        "reason": "Installs the small program that takes your monthly evidence snapshot, and removes it at teardown. It covers only that one program — AuditPoppy cannot read or change anything else that runs in your account."
       },
       {
         "service": "s3",
@@ -197,7 +198,8 @@
           "ListBucketVersions",
           "HeadBucket"
         ],
-        "resourceScope": "arn:aws:s3:::auditpoppy-*"
+        "resourceScope": "arn:aws:s3:::auditpoppy-*",
+        "reason": "Creates the storage that holds your evidence — encrypted, versioned, closed to the public — and empties and removes it at teardown. It covers only AuditPoppy's own storage, never your other buckets."
       },
       {
         "service": "s3",
@@ -208,7 +210,8 @@
           "GetObjectVersion",
           "DeleteObjectVersion"
         ],
-        "resourceScope": "arn:aws:s3:::auditpoppy-*/*"
+        "resourceScope": "arn:aws:s3:::auditpoppy-*/*",
+        "reason": "Writes each evidence snapshot into that storage and reads it back when you build an export. It covers only what AuditPoppy itself put there."
       },
       {
         "service": "dynamodb",
@@ -227,7 +230,8 @@
           "Scan",
           "BatchWriteItem"
         ],
-        "resourceScope": "arn:aws:dynamodb:*:*:table/AuditPoppyStack-*"
+        "resourceScope": "arn:aws:dynamodb:*:*:table/AuditPoppyStack-*",
+        "reason": "Keeps AuditPoppy's own record of what it has collected and when, so a report can be rebuilt without re-reading everything. It covers only AuditPoppy's own record."
       },
       {
         "service": "events",
@@ -241,7 +245,8 @@
           "TagResource",
           "UntagResource"
         ],
-        "resourceScope": "arn:aws:events:*:*:rule/AuditPoppyStack-*"
+        "resourceScope": "arn:aws:events:*:*:rule/AuditPoppyStack-*",
+        "reason": "Sets the monthly timer that takes your evidence snapshot without you having to remember, and cancels it at teardown. It covers only AuditPoppy's own timer."
       },
       {
         "service": "logs",
@@ -251,7 +256,8 @@
           "PutRetentionPolicy",
           "TagResource"
         ],
-        "resourceScope": "arn:aws:logs:*:*:log-group:/aws/lambda/AuditPoppyStack-*"
+        "resourceScope": "arn:aws:logs:*:*:log-group:/aws/lambda/AuditPoppyStack-*",
+        "reason": "Keeps a short-lived record of whether each monthly snapshot ran, so a silent failure is visible, and deletes that record at teardown. It covers only AuditPoppy's own."
       },
       {
         "service": "iam",

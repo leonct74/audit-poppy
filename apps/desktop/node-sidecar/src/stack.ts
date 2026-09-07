@@ -15,7 +15,7 @@ import { CODE_PREFIX } from "@auditpoppy/core";
 import { isNotFound } from "./awsErrors";
 import type { Clients } from "./clients";
 import { STACK_NAME, stackTags } from "./permissionSet";
-import { buildTemplate, evidenceBucketName } from "./template";
+import { buildTemplate, evidenceBucketName, evidenceBucketRef } from "./template";
 
 export interface StackState {
   status:
@@ -107,7 +107,7 @@ export async function advanceDeploy(clients: Clients, input: DeployInput): Promi
     const key = `${CODE_PREFIX}${input.lambdaCodeKey}`;
     await clients.s3.send(
       new PutObjectCommand({
-        Bucket: bucket,
+        ...evidenceBucketRef(input.accountId),
         Key: key,
         Body: input.lambdaZip,
         ContentType: "application/zip",

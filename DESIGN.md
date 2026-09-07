@@ -212,6 +212,22 @@ AuditPoppy needs to *see everything* (that is the product) and *change almost no
   read is the product, in the approval-preview `reason`s, not by fighting the rating.
 - Validate both halves with `accessanalyzer validate-policy` + the service-reference scoping
   check (the [[aws-service-reference-scoping]] lesson) before any live run.
+- **Every grant carries a `reason`, writes included** (security review, 2026-09-07). The rule
+  used to exempt anything scoped to our own stack, on the theory that a narrow grant explains
+  itself. It does not: the approval screen shows a person "iam: CreateRole, DeleteRole,
+  PutRolePolicy…" either way, and for a product whose pitch *is* legible permissions, having
+  the writes be the unexplained ones was exactly backwards. Test-pinned.
+- **Two grants removed in the same review**, both for the same reason — a permission nobody
+  exercises cannot fail loudly when it is taken away, so it survives by inertia until someone
+  finds a use for it that the approver never agreed to:
+  - `lambda:InvokeFunction` — the monthly schedule invokes the snapshot function; EventBridge's
+    permission to do so lives in the template, and nothing here ever calls it.
+  - `iam:DeleteRolePermissionsBoundary` — the host attaches a boundary to the role our stack
+    creates, and the platform's security spec has an outstanding step that makes that boundary
+    mandatory. Holding this action would step around that fix in one call: create the role
+    bounded, then strip the boundary. Putting a boundary *on* stays; taking one *off* is never
+    AuditPoppy's to do. (A stack update that went from bounded to unbounded would now fail
+    rather than succeed — the correct direction for a compliance tool to fail in.)
 
 ## 5. Frameworks & mapping
 
@@ -250,6 +266,38 @@ bucket is SSE + TLS-only + no public access (MailPoppy's §14 hardening list, re
 gap report's export warns it is sensitive; and the poppy's own compliance block declares
 `subprocessors: []` — no user data, findings included, ever reaches the developer. The
 in-app screens state the same in plain words.
+
+**Three hardenings from the 2026-09-07 security review** (the whole poppy was reviewed, not
+just a diff, because the repo is about to be published):
+
+1. **The sidecar's loopback port now checks who is calling.** It read only method, path and
+   body — no caller identity at all — while AGENTS.md is explicit that loopback is *not* a
+   trust boundary, since every poppy's backend is a local process too. Any process running as
+   the user could read the account id and every failing control, mint an export download
+   token, or `POST /teardown` and destroy the versioned evidence bucket. It now refuses any
+   request carrying an `Origin` header (only a browser sets one, and no legitimate caller here
+   does) or whose `Host` is not loopback (which kills DNS rebinding). That closes the browser
+   class completely; the local-process class needs a shared secret only the host can issue,
+   and is filed as a platform request. `localOnly.ts` says what each half does and why.
+2. **Every S3 call asserts the bucket's owner.** The evidence bucket's name is derived from the
+   account id and S3's namespace is global, so the name is guessable and our own
+   `arn:aws:s3:::auditpoppy-*` grant matches it in *any* account. Someone who pre-created that
+   name in their own account could not have made us write into it through the shipped UI — the
+   stack fails and the snapshot button is gated on a healthy stack — but the *read* path was
+   ungated, so attacker-authored JSON would have been parsed and carried into the export handed
+   to an auditor. Fabricated evidence in the deliverable is the worst outcome this product has.
+   `evidenceBucketRef()` returns the name and `ExpectedBucketOwner` **as one value** so a call
+   site cannot take one without the other, and a test reads the source to keep it that way.
+3. **The paid licence is filed against the cloud account, not the buyer.** `buyProduct` was
+   called with no `target`, so a purchase keyed on the install that paid — meaning a reinstall,
+   or auditing the same account from a second machine, would silently lose a licence somebody
+   paid for. That is precisely the failure §8's account key exists to prevent, and the Export
+   screen already promised the opposite in words.
+
+One race surfaced while re-running the smoke loop and was fixed with them: `/status` read the
+persisted state *before* its network calls and reported `enableOp` *after* them, so a single
+poll could say "enable finished" beside a trial clock that had not started. Rare, real, and a
+UI would have seen it too.
 
 ## 7. Costs (GuardDuty precedent — recommended, opt-in, priced before consent)
 
