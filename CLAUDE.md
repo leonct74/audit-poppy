@@ -62,6 +62,23 @@ Anything security-sensitive about the PLATFORM (how the licence endpoints can be
 was fixed, what risk was accepted) belongs in the private `agentspoppy-web` repo next to the
 code it describes — see `docs/security-review-license-flow.md` there — never in this one.
 
+## Certification (`npm run certify -- --yes`)
+
+The leaves-no-trace harness lives in the **agentspoppy** repo, not here; `scripts/certify.mjs`
+finds it (`AGENTSPOPPY_REPO`, then `~/Projects/agentspoppy`, then `../agentspoppy`) and passes
+`--extension` for you — so never pass another, or it resolves against the platform directory
+instead. It refuses to run without `--yes`, because it performs a **real** teardown.
+
+**The order is the opposite of the intuitive one, and getting it wrong costs a full cycle:**
+certify tears down ITSELF, then sweeps for anything left tagged. So it needs the poppy currently
+deployed and used. Tear down first and there is nothing to certify. **Certify first, then rebuild
+for real.** The certificate is only written when the run passes, so a failed run leaves you with
+nothing and you must deploy and use the poppy again before retrying.
+
+A ⚠️ warning about a resource the tag index still lists is **not** a failure — AWS's index lags
+its own reality (Cognito pools for days). Open the linked resource: gone means gone. Never
+"fix" that warning by weakening teardown.
+
 ## The three laws that bind every word and grant
 
 1. **Naming law (DESIGN §0):** never "SOC 2 compliant/certified" — only a licensed CPA firm

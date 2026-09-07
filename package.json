@@ -16,7 +16,8 @@
     "gen:manifest": "npm run gen:manifest -w @auditpoppy/desktop-sidecar",
     "build": "npm run build -w @auditpoppy/desktop && npm run build -w @auditpoppy/desktop-sidecar",
     "preinstall:local": "npm run build",
-    "install:local": "node scripts/install-local.mjs"
+    "install:local": "node scripts/install-local.mjs",
+    "certify": "node scripts/certify.mjs"
   },
   "engines": {
     "node": ">=20"
