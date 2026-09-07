@@ -125,6 +125,20 @@ describe("the manifest and the declared permission set", () => {
     { service: "AWS Security Hub", slr: "securityhub.amazonaws.com/AWSServiceRoleForSecurityHub" },
   ];
 
+  it("can delete a service-linked role by the ARN the DELETE call is authorized against", () => {
+    // Live teardown, 2026-09-07: creation was permitted all week, deletion was refused on
+    // `arn:aws:iam::<account>:role/AWSServiceRoleForConfig`. DeleteServiceLinkedRole takes a
+    // role NAME and IAM authorizes against a pathless ARN, while CreateServiceLinkedRole uses
+    // the full aws-service-role/<service>/ path. Granting only the path form leaves a role
+    // behind at teardown — the one promise "leaves no trace" cannot afford to break.
+    const iam = permissionSet().grants.filter((g) => g.service === "iam");
+    for (const role of ["AWSServiceRoleForConfig", "AWSServiceRoleForSecurityHub"]) {
+      const pathless = `arn:aws:iam::*:role/${role}`;
+      const ok = iam.some((g) => g.actions.includes("DeleteServiceLinkedRole") && g.resourceScope === pathless);
+      assert.ok(ok, `no DeleteServiceLinkedRole grant on the pathless ARN for ${role}`);
+    }
+  });
+
   it("may create — and later delete — every service-linked role it causes to exist", () => {
     const iam = permissionSet().grants.filter((g) => g.service === "iam");
     for (const { service, slr } of SERVICE_LINKED_ROLES) {

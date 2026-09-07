@@ -125,6 +125,15 @@
       {
         "service": "iam",
         "actions": [
+          "DeleteServiceLinkedRole",
+          "GetServiceLinkedRoleDeletionStatus"
+        ],
+        "resourceScope": "arn:aws:iam::*:role/AWSServiceRoleForConfig",
+        "reason": "Removes that AWS-defined helper role when you remove AuditPoppy — the deletion call names the role without its path, so it needs this form as well. It covers only that one role."
+      },
+      {
+        "service": "iam",
+        "actions": [
           "PassRole"
         ],
         "resourceScope": "arn:aws:iam::*:role/aws-service-role/config.amazonaws.com/AWSServiceRoleForConfig*",
@@ -139,6 +148,15 @@
         ],
         "resourceScope": "arn:aws:iam::*:role/aws-service-role/securityhub.amazonaws.com/AWSServiceRoleForSecurityHub*",
         "reason": "AWS Security Hub needs its own AWS-defined helper role to read your findings; turning Security Hub on creates exactly that role, and removal deletes it again if AuditPoppy was what created it."
+      },
+      {
+        "service": "iam",
+        "actions": [
+          "DeleteServiceLinkedRole",
+          "GetServiceLinkedRoleDeletionStatus"
+        ],
+        "resourceScope": "arn:aws:iam::*:role/AWSServiceRoleForSecurityHub",
+        "reason": "Removes that AWS-defined helper role when you remove AuditPoppy — the deletion call names the role without its path, so it needs this form as well. It covers only that one role."
       },
       {
         "service": "lambda",

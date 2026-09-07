@@ -154,6 +154,20 @@ either — and enforces both of the safeguards above: it will not arm until the 
 exported or the user explicitly says they do not want it, and the confirmation names the cloud
 account so nobody removes from the wrong one.
 
+**And it still left two roles behind (live teardown, 2026-09-07).** Everything else worked —
+services off, stack deleted, bucket emptied and deleted — but both service-linked roles survived:
+`iam:DeleteServiceLinkedRole` was refused on `arn:aws:iam::<account>:role/AWSServiceRoleForConfig`.
+The delete call takes a role NAME and IAM authorizes against a **pathless** ARN, while
+`CreateServiceLinkedRole` authorizes against the full `aws-service-role/<service>/` path. Creation
+was permitted all week; deletion never could have been. Both forms are granted now, each still
+naming exactly one role, and pinned by a test — because "leaves no trace" is the promise
+certification measures and an orphaned role breaks it.
+
+The teardown design earned its keep here: every step runs under `attempt()`, so the two failures
+were **recorded and reported** while the rest of the removal completed, rather than aborting
+half-way and leaving the bucket behind as well. A removal that stops at the first error is worse
+than one that finishes and tells you what it could not do.
+
 ## 4. Permissions — the first deliberately WIDE poppy, and how it stays honest
 
 AuditPoppy needs to *see everything* (that is the product) and *change almost nothing*:

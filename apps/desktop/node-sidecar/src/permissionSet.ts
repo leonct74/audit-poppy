@@ -43,6 +43,13 @@ const stack = `arn:aws:cloudformation:*:*:stack/${STACK_NAME}/*`;
 const role = `arn:aws:iam::*:role/${STACK_NAME}-*`;
 const configSlr = "arn:aws:iam::*:role/aws-service-role/config.amazonaws.com/AWSServiceRoleForConfig*";
 const securityHubSlr = "arn:aws:iam::*:role/aws-service-role/securityhub.amazonaws.com/AWSServiceRoleForSecurityHub*";
+// DeleteServiceLinkedRole authorizes against the role NAME, with no path — unlike
+// CreateServiceLinkedRole, which uses the full aws-service-role/<service>/ path. A live
+// teardown (2026-09-07) proved it: creation was allowed all week, deletion was refused on
+// `arn:aws:iam::<account>:role/AWSServiceRoleForConfig`, an ARN our path-scoped grant could
+// never match. Both forms are needed, and each still names exactly one role.
+const configSlrByName = "arn:aws:iam::*:role/AWSServiceRoleForConfig";
+const securityHubSlrByName = "arn:aws:iam::*:role/AWSServiceRoleForSecurityHub";
 const fn = `arn:aws:lambda:*:*:function:${STACK_NAME}-*`;
 const table = `arn:aws:dynamodb:*:*:table/${STACK_NAME}-*`;
 const logs = `arn:aws:logs:*:*:log-group:/aws/lambda/${STACK_NAME}-*`;
@@ -104,6 +111,8 @@ export function permissionSet() {
       // on the role being handed over. Found live on 2026-09-05 — the mock has no IAM, so the smoke
       // loop enabled happily while the real call failed with "no session policy allows the
       // iam:PassRole action". Scoped to the one AWS-defined role, never to "*".
+      grant("iam", ["DeleteServiceLinkedRole", "GetServiceLinkedRoleDeletionStatus"], configSlrByName,
+        "Removes that AWS-defined helper role when you remove AuditPoppy — the deletion call names the role without its path, so it needs this form as well. It covers only that one role."),
       grant("iam", ["PassRole"], configSlr,
         "Hands that AWS-defined helper role to the AWS Config service — the step that actually starts the change recording. It covers only that one role, so it cannot be used to hand over any other role in your account."),
       // Security Hub creates its OWN service-linked role as a side effect of EnableSecurityHub —
@@ -112,6 +121,8 @@ export function permissionSet() {
       // the Config PassRole fix: an implicit role creation is still a role creation.
       grant("iam", ["CreateServiceLinkedRole", "DeleteServiceLinkedRole", "GetServiceLinkedRoleDeletionStatus"], securityHubSlr,
         "AWS Security Hub needs its own AWS-defined helper role to read your findings; turning Security Hub on creates exactly that role, and removal deletes it again if AuditPoppy was what created it."),
+      grant("iam", ["DeleteServiceLinkedRole", "GetServiceLinkedRoleDeletionStatus"], securityHubSlrByName,
+        "Removes that AWS-defined helper role when you remove AuditPoppy — the deletion call names the role without its path, so it needs this form as well. It covers only that one role."),
       grant("lambda", [
         "CreateFunction", "DeleteFunction", "GetFunction", "GetFunctionConfiguration",
         "UpdateFunctionCode", "UpdateFunctionConfiguration", "AddPermission", "RemovePermission",
