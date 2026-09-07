@@ -168,6 +168,29 @@ were **recorded and reported** while the rest of the removal completed, rather t
 half-way and leaving the bucket behind as well. A removal that stops at the first error is worse
 than one that finishes and tells you what it could not do.
 
+**A PLATFORM dependency this poppy cannot route around (2026-09-07).** Certification failed with
+the stack in `DELETE_FAILED`: CloudFormation deletes an `AWS::Lambda::Permission` by calling
+`lambda:RemovePermission`, and the host's maintenance session — which is what certify deletes
+stacks with, not the poppy's own session — is granted only `lambda:ListTags` and
+`lambda:DeleteFunction`. AuditPoppy's own manifest DOES grant the action, which is why in-app
+teardown succeeds while certification does not.
+
+Every workaround was examined and rejected, and the reasoning is worth keeping because it is not
+obvious: **IAM authorizes before the service looks at the resource**, so removing the permission
+ourselves beforehand changes nothing — CloudFormation still calls `RemovePermission` and is still
+denied. Deleting the function first fails the same way. Dropping the resource is not available
+either: EventBridge invoking a Lambda requires a resource-based policy, and the role-based
+alternative (`AWS::Scheduler::Schedule`) is not in the maintenance policy at all, which trades one
+gap for a worse one. Removing the schedule would remove continuous evidence collection, which is
+the product.
+
+So the fix belongs in `agentspoppy` (`packages/broker/src/aws/maintenance.ts`), and it affects
+**every poppy with a scheduled Lambda** — a shape the platform encourages. Until it lands,
+certification of this poppy cannot pass. The signature to recognise: `DELETE_FAILED` on an
+`AWS::Lambda::Permission`, with the principal in the error being `AgentsPoppyHost-maintenance`
+rather than `agentspoppy-<uuid>`. **Read the principal first** — it says immediately whether a
+denial is the poppy's problem or the host's.
+
 ## 4. Permissions — the first deliberately WIDE poppy, and how it stays honest
 
 AuditPoppy needs to *see everything* (that is the product) and *change almost nothing*:

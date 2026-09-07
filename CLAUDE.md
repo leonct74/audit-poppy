@@ -88,6 +88,16 @@ is the part of teardown most likely to break. The certificate it writes
 (`leaves-no-trace.cert.json`) is gitignored: it records the AWS account the run happened in, and
 this repo goes public.
 
+**Certification is BLOCKED on a platform fix (2026-09-07), not on anything in this repo.**
+CloudFormation deletes an `AWS::Lambda::Permission` by calling `lambda:RemovePermission`; the
+host's maintenance session — which is what certify deletes stacks with — is granted only
+`lambda:ListTags` and `lambda:DeleteFunction`. The stack ends in `DELETE_FAILED` and no
+certificate is written. It needs `lambda:RemovePermission` added in `agentspoppy`
+(`packages/broker/src/aws/maintenance.ts`), and it affects every poppy with a scheduled Lambda.
+DESIGN §3 records why no workaround exists on this side. **When an AccessDenied appears, read the
+PRINCIPAL first:** `agentspoppy-<uuid>` is this poppy's session and the fix is our manifest;
+`AgentsPoppyHost-maintenance` is the host's own and the fix is the platform's.
+
 ## The three laws that bind every word and grant
 
 1. **Naming law (DESIGN §0):** never "SOC 2 compliant/certified" — only a licensed CPA firm
