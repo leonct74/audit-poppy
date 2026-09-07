@@ -202,6 +202,13 @@ the policy does not carry:
 | `AWS::S3::BucketPolicy` | `s3:DeleteBucketPolicy` | ✗ — it has `DeleteBucket`, a different action |
 | `AWS::DynamoDB::Table` | `dynamodb:DescribeTable`, polled to confirm the delete | ✗ — it has `DeleteTable`, not the poll |
 
+**Confirmed by controlled comparison, 2026-09-07.** The founder removed the poppy from the app,
+and it deleted the very stack certify had left in `DELETE_FAILED` — the Lambda permission, the
+bucket policy and the table included — then emptied and deleted the evidence bucket and removed
+both service-linked roles, with no problems reported. Same stack, same account, different
+principal, different outcome. That isolates the missing actions rather than inferring them, and
+`dynamodb:DescribeTable` isolates cleanly because BOTH principals hold `DeleteTable`.
+
 The general shape, which is the part worth keeping: **CloudFormation deletes a stack with the
 CALLER's credentials**, so the host's session policy has to cover every resource type any poppy's
 template can create — not the types the platform happens to create itself. A policy assembled

@@ -165,7 +165,24 @@ is the platform's. And read the whole policy, not the lines matching the service
   escalation is the platform's own tracked "2026-08-26 fault A, step 3" (the mandatory
   permissions boundary). We removed `iam:DeleteRolePermissionsBoundary` so we cannot step around
   that fix when it lands.
+- ✅ **TEARDOWN LIVE-VERIFIED against the real account (2026-09-07)** — clean, no problems
+  reported: both standards and Security Hub off, Config delivery channel and recorder gone,
+  **both service-linked roles deleted**, stack deleted, evidence bucket emptied and deleted.
+  Three things this settles:
+  1. The pathless-ARN fix for `DeleteServiceLinkedRole` works. The earlier teardown failed on
+     exactly those two roles because the delete call names a role WITHOUT its path, so the
+     path-qualified grant never matched. Both now come away.
+  2. The stack it deleted was the one sitting in `DELETE_FAILED` after a failed certify run —
+     including the `AWS::Lambda::Permission`, `AWS::S3::BucketPolicy` and `AWS::DynamoDB::Table`
+     that the host's maintenance session could not remove. **Our session deletes what the host's
+     cannot**, which turns the three-missing-actions diagnosis from a reading of the policy into
+     a controlled comparison: same stack, same account, different principal, different outcome.
+     `dynamodb:DescribeTable` is isolated cleanly — both principals hold `DeleteTable`.
+  3. "Leaves no trace" is real behaviour now, not just a design claim. What remains is the
+     FORMAL certificate, and that is blocked on the platform, not on this repo.
 - Next: phase-0 teardown + cost readout (09-09) → `npm run certify` and the machine-gate
   check → platform-side items (commerce product, deploy the signup, catalogue submission)
-  — DESIGN §12 "What remains before listing". Still unexercised live: teardown against a
-  real account, and the Policies screen end to end.
+  — DESIGN §12 "What remains before listing". Still unexercised live: **the Policies screen end
+  to end** — and it is the one thing that needs nothing deployed, since `/policies` reads IAM,
+  MFA coverage, the password policy and CloudTrail directly. It can be exercised on a torn-down
+  account at zero cost, which is exactly what to do while certification waits on the platform.
