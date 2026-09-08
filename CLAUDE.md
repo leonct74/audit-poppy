@@ -209,9 +209,21 @@ is the platform's. And read the whole policy, not the lines matching the service
   Fixed by classify-then-write (never pass a provider message through) plus `documentSafe()` as a
   backstop on every value entering prose. DESIGN §5b. **Whenever you add text to a document,
   ask what an error string might carry into it.**
-- Next: phase-0 teardown + cost readout (09-09) → `npm run certify` and the machine-gate
-  check → platform-side items (commerce product, deploy the signup, catalogue submission)
-  — DESIGN §12 "What remains before listing". Still unexercised live: **the Policies screen end
-  to end** — and it is the one thing that needs nothing deployed, since `/policies` reads IAM,
-  MFA coverage, the password policy and CloudTrail directly. It can be exercised on a torn-down
-  account at zero cost, which is exactly what to do while certification waits on the platform.
+- ✅ **POLICIES SCREEN LIVE-VERIFIED (2026-09-08)** — the last item on the "never exercised live"
+  list. Observed facts pre-fill correctly, typed answers persist across a tab switch, and they
+  render into the policy body. **Every screen has now run against a real account.**
+- ✅ **Listing copy written and test-pinned** (`packages/core/src/listing.ts`, `LISTING.md`).
+  Writing it caught a conflict nobody had noticed: DESIGN §11.1 decided the tagline *"SOC 2
+  audit-readiness in your own AWS"* on 09-02, and the cloud-neutral rule landed on 09-03 — the
+  decided tagline fails this repo's own `checkCopy`. Settled to "in your own cloud"; the founder's
+  search rationale survives because proper nouns stay, so "AWS Config" and "AWS Security Hub" are
+  still in the description. Reversible in one line if the founder prefers the original.
+- Next, in dependency order — **the whole listing chain is gated on certification, which is gated
+  on the platform** (`LISTING.md` has the order and the two one-way steps):
+  1. phase-0 teardown + cost readout (09-09, tomorrow);
+  2. the platform's three delete actions land → `npm run certify -- --yes`;
+  3. click-test the PACKED build in the real host — the only place `machine: "aws-only"` is
+     actually proven, since the host refuses undeclared connections on the real spawn path;
+  4. run the history check, then flip this repo public (fixes `bugsUrl` too);
+  5. `npm run pack` → GitHub Release → catalog entry → submit.
+  Platform-side and independent of the above: the commerce product, and deploying the signup.

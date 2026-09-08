@@ -1,0 +1,52 @@
+# Getting AuditPoppy into the directory
+
+The copy itself lives in `packages/core/src/listing.ts`, test-pinned against the three laws —
+edit it there, never here, or the two drift and the tests only guard one of them.
+
+This file is the **order of operations**, because several steps depend on each other and two of
+them are one-way.
+
+## The chain
+
+1. **Certification must pass first.** `npm run certify -- --yes`. The release runbook gates on it
+   and the directory re-runs the same harness at submission, so a listing built before it is a
+   listing built on a guess. **Currently blocked on the platform** — see CLAUDE.md; the host's
+   maintenance session cannot delete three of this stack's resource types.
+
+2. **Make this repository public.** Two separate things need it, which is why it is not just
+   housekeeping:
+   - The directory requires `repo` on every entry — the open-repo rule *is* the audit
+     affordance, and a 404 defeats the purpose of having one.
+   - `bugsUrl` in the manifest already points at this repo's issues, and §9a requires a public
+     tracker. It 404s for everyone but the owner until the flip.
+
+   **Before flipping, run the history check in CLAUDE.md.** The tip is guarded by a test; history
+   is not, and publishing is not undoable.
+
+3. **Pack.** `npm run pack`. It prints the sha256 and a ready-to-paste catalog entry with two
+   `<FILL>` fields. The sha256 *is* the trust story — the broker verifies it locally before
+   anything lands on a user's disk — so pack from a clean tree, at the exact commit you release.
+
+4. **Publish the zip as a GitHub Release on this repository.** Packages live in the poppy's own
+   repo, not on AgentsPoppy's infrastructure: the platform hosts kilobytes of catalog and the
+   bytes come from here. Hosting is untrusted by design, which is what makes step 3's hash the
+   thing that matters.
+
+5. **Fill the catalog entry** from `listing.ts` and the release: `id, name, tagline, description,
+   publisher, website, repo, version`, and `packages: { "any": { url, sha256 } }`. The platform
+   key is `any` because this poppy's backend is a `node22` bundle rather than a native binary —
+   one package, every machine.
+
+6. **Submit through the developer portal.**
+
+## The two one-way steps
+
+Making the repository public, and publishing a release. Everything before them is reversible;
+neither of them is. Do steps 1 and the history check before either.
+
+## What the version string means
+
+The version in `extension.json` is the **entire** update signal — the host compares it and
+nothing else. Bump it for every release, and never widen the permission set as a side effect of
+one: a user approved the grants they were shown, and a silent widening is the thing the whole
+approval screen exists to prevent.
