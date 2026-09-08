@@ -5,6 +5,7 @@ export * from "./equivalence";
 export * from "./gapReport";
 export * from "./ledger";
 export * from "./costs";
+export * from "./documentSafe";
 export * from "./evidence";
 export * from "./licensing";
 export * from "./policyPack";

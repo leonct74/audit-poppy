@@ -324,6 +324,39 @@ outer match consumes the inner tags and a replaced body is never re-scanned. The
 of this shipped a literal `{{#mfaCoverage}}` into the rendered text, which is exactly the class
 of bug it was written to prevent.
 
+### Nothing identifying may reach a document the customer hands out (2026-09-08)
+
+The banner above worked: it named the cause on the next run. `iam:ListMFADevices` on AgentsPoppy's
+own operator user is denied by the platform's `CannotTamperWithAgentsPoppy` guardrail —
+`Deny iam:*` on the broker role, the operator user and the boundary policy. **That Deny is
+correct and stays.** It is aimed at tampering and catches a read as a side effect, which costs
+exactly one unreadable account, on every install, forever.
+
+Two changes came out of it, and the second is the one that mattered.
+
+**A Deny is an exclusion, not a fault.** Denied accounts are counted separately from failed ones,
+so the count stays exact and the sentence explains why the numbers do not add up:
+
+> "11 user accounts, of which 1 lacks MFA. One further account is the identity AgentsPoppy itself
+> uses; AuditPoppy is deliberately not permitted to read it, and it is not a person's login."
+
+No warning banner for it either — a permanent alarm about a working guardrail teaches people to
+ignore alarms.
+
+**The provider's error message was being rendered into the policy document.** The real one read
+`User: arn:aws:sts::<account>:assumed-role/AgentsPoppyBroker/agentspoppy-<uuid> … on resource:
+user <name> … Go to https://…/authorization-details/<id>` — an account id, a role name, a session
+id, a user name and a console link, in a file a customer emails to an auditor. This repo has a
+rule about identifying data in **its own files**, with a test that enforces it; the same care had
+never been applied to the documents the product **produces**, which is the more consequential
+direction by far.
+
+The fix is classify-then-write: a failure becomes a plain sentence chosen from what kind of
+failure it was, and a provider message is never passed through. `documentSafe()` strips ARNs,
+account ids, URLs and authorization ids as a backstop, applied to every value entering prose —
+and it is explicitly *not* a guarantee, because a bare IAM user name looks like any other word.
+Belt and braces, with the belt being "do not put raw errors in documents at all".
+
 ## 6. Privacy & threat model (the honest paragraph, up front)
 
 Everything stays in the customer's account — but the *customer's own admins* can read the

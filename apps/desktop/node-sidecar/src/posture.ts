@@ -11,7 +11,7 @@ import { ListFunctionsCommand } from "@aws-sdk/client-lambda";
 import { DescribeDBInstancesCommand } from "@aws-sdk/client-rds";
 import { ListBucketsCommand } from "@aws-sdk/client-s3";
 import type { ObservedPosture } from "@auditpoppy/core";
-import { errorMessage, isNotFound, isThrottled } from "./awsErrors";
+import { errorMessage, isAccessDenied, isNotFound, isThrottled } from "./awsErrors";
 import type { Clients } from "./clients";
 
 interface CountsOutput {
@@ -126,7 +126,9 @@ export async function observePosture(clients: Clients, accountId: string, region
   if (posture.iamUserCount !== undefined) {
     let withoutMfa = 0;
     let checked = 0;
-    let lastProblem: string | undefined;
+    let excluded = 0;
+    let faulted = 0;
+    let faultReason: string | undefined;
     for (const user of users) {
       if (!user.UserName) continue;
       try {
@@ -134,17 +136,29 @@ export async function observePosture(clients: Clients, accountId: string, region
         if ((mfa.MFADevices ?? []).length === 0) withoutMfa += 1;
         checked += 1;
       } catch (err) {
-        // Never name the user: this string reaches a document, and a user name is exactly the
-        // kind of identifying detail that has no business being in one.
-        lastProblem = isThrottled(err)
-          ? "Your cloud provider limited how fast we could check each account."
-          : errorMessage(err);
+        if (isAccessDenied(err)) {
+          // Denied on purpose, not broken. Every install hits this on AgentsPoppy's own operator
+          // user: the platform's CannotTamperWithAgentsPoppy guardrail denies iam:* on it, which
+          // catches this read. That Deny is correct — notice it and move on. Warning about it
+          // would put a permanent scary banner in front of every user, every time.
+          excluded += 1;
+          continue;
+        }
+        faulted += 1;
+        // NEVER the provider's message. On 2026-09-08 it read "User: arn:aws:sts::<account>:
+        // assumed-role/… on resource: user <name> … Go to https://…/authorization-details/<id>"
+        // and this string is rendered into the policy a customer hands to an auditor. Classify;
+        // do not pass through. (documentSafe() is the backstop, not the plan.)
+        faultReason = isThrottled(err)
+          ? "Your cloud provider limited how fast we could check each account — opening this tab again usually clears it."
+          : "Your cloud provider refused some of those checks.";
       }
     }
-    if (checked > 0) posture.usersWithoutMfa = withoutMfa;
-    if (checked < users.length) {
+    if (checked > 0 || excluded > 0) posture.usersWithoutMfa = withoutMfa;
+    if (excluded > 0) posture.mfaUsersExcluded = excluded;
+    if (faulted > 0) {
       posture.mfaUsersChecked = checked;
-      posture.mfaScanProblem = `Multi-factor authentication could only be checked for ${checked} of ${users.length} accounts.${lastProblem ? ` ${lastProblem}` : ""}`;
+      posture.mfaScanProblem = `Multi-factor authentication could not be checked for ${faulted} of ${users.length} accounts. ${faultReason ?? ""}`.trim();
     }
   }
 

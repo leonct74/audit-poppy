@@ -197,10 +197,18 @@ is the platform's. And read the whole policy, not the lines matching the service
   user discarded everything already counted, silently. Cause 2: "not yet observed" was a VALUE,
   fine on a chip and a disaster in prose. Both fixed (DESIGN §5a), a partial scan now reports a
   FLOOR rather than a total, and the reason is shown on the screen instead of a blank.
-  **Still unknown: WHY that account's `ListMFADevices` calls failed** — throttling is the
-  suspect (11 sequential IAM calls) but the old code swallowed the error. The next run says so
-  in plain words on the Policies tab. **Same lesson as the six enable bugs: it lived in the gap
-  between the mock and AWS.**
+  **ANSWERED on 2026-09-08, and it was not throttling:** `iam:ListMFADevices` on AgentsPoppy's own
+  operator user is denied by the platform's `CannotTamperWithAgentsPoppy` guardrail (`Deny iam:*`
+  on the broker role, the operator user and the boundary policy). That Deny is correct and stays;
+  it costs exactly one unreadable account on every install. A Deny is now counted as an
+  EXCLUSION, not a fault — exact count, one explaining sentence, no permanent scary banner.
+- 🚨 **And it exposed a worse bug: the provider's error was being rendered INTO the policy
+  document** — an account id, a role ARN, a session id, a user name and a console link, in a file
+  a customer emails to an auditor. This repo has a rule about identifying data in its own files,
+  and a test enforcing it; the same care had never been applied to what the product PRODUCES.
+  Fixed by classify-then-write (never pass a provider message through) plus `documentSafe()` as a
+  backstop on every value entering prose. DESIGN §5b. **Whenever you add text to a document,
+  ask what an error string might carry into it.**
 - Next: phase-0 teardown + cost readout (09-09) → `npm run certify` and the machine-gate
   check → platform-side items (commerce product, deploy the signup, catalogue submission)
   — DESIGN §12 "What remains before listing". Still unexercised live: **the Policies screen end

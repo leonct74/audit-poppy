@@ -67,7 +67,7 @@ describe("a fact we could not observe changes the sentence — it never appears 
 
   it("states both numbers when the whole scan succeeded", () => {
     const body = mfaSection({ ...base, iamUserCount: 11, usersWithoutMfa: 1 });
-    expect(body).toContain("11 user accounts, of which 1 lack MFA.");
+    expect(body).toContain("11 user accounts, of which 1 lacks MFA.");
     expect(body).not.toContain("not yet observed");
   });
 
@@ -87,7 +87,7 @@ describe("a fact we could not observe changes the sentence — it never appears 
     // true here, and it is the weaker one — the same discipline as inheritFindings refusing to
     // assert a specific failure it cannot attribute.
     const body = mfaSection({ ...base, iamUserCount: 11, usersWithoutMfa: 1, mfaUsersChecked: 9 });
-    expect(body).toContain("at least 1 lack MFA");
+    expect(body).toContain("at least 1 lacks MFA");
     expect(body).toContain("covers the 9 accounts we could check");
   });
 
@@ -108,5 +108,45 @@ describe("a fact we could not observe changes the sentence — it never appears 
     const body = renderPolicy(access, base, { companyName: "$& Ltd" }).sections[0]!.body;
     expect(body).toContain("$& Ltd");
     expect(body).not.toContain("{{companyName}}");
+  });
+});
+
+describe("an account we are not PERMITTED to read is an exclusion, not a fault", () => {
+  const access = POLICY_TEMPLATES.find((t) => t.id === "access-control")!;
+  const base = { accountId: "111122223333", region: "eu-west-1", observedAt: "2026-09-08T00:00:00.000Z" };
+  const mfa = (p: ObservedPosture): string =>
+    renderPolicy(access, p, {}).sections.find((s) => s.body.includes("Multi-factor"))!.body;
+
+  it("states the count exactly and explains the account it could not read", () => {
+    // The live shape on 2026-09-08: 11 users, 10 readable, the 11th is AgentsPoppy's own
+    // operator identity, denied by the platform's CannotTamperWithAgentsPoppy guardrail.
+    const body = mfa({ ...base, iamUserCount: 11, usersWithoutMfa: 1, mfaUsersExcluded: 1 });
+    expect(body).toContain("11 user accounts, of which 1 lacks MFA.");
+    expect(body).toContain("not permitted to read it");
+    // An exclusion is NOT a fault: no "could not be checked" alarm, and no floor language.
+    expect(body).not.toContain("could not be checked");
+    expect(body).not.toContain("at least");
+  });
+
+  it("keeps 'could not be checked' for an actual fault", () => {
+    const body = mfa({ ...base, iamUserCount: 11, usersWithoutMfa: 1, mfaUsersChecked: 9, mfaScanProblem: "Multi-factor authentication could not be checked for 2 of 11 accounts. Your cloud provider limited how fast we could check each account — opening this tab again usually clears it." });
+    expect(body).toContain("at least 1 lacks MFA");
+    expect(body).toContain("could not be checked for 2 of 11");
+  });
+
+  it("NEVER lets an identifier into the document, whatever upstream hands it", () => {
+    // The 2026-09-08 leak: the provider's own denial message carried an account id, a role ARN,
+    // a session id and a console link, and it was being rendered into the policy body. Upstream
+    // now classifies instead of passing it through; this proves the last line of defence too.
+    const body = mfa({
+      ...base,
+      iamUserCount: 11,
+      mfaScanProblem:
+        "User: arn:aws:sts::111122223333:assumed-role/AgentsPoppyBroker/agentspoppy-b1df195f is not authorized. Go to https://console.aws.amazon.com/iam/home#/authorization-details/5arhuwacg4o48yxyin4kcrony",
+    });
+    expect(body).not.toContain("arn:aws");
+    expect(body).not.toContain("111122223333");
+    expect(body).not.toContain("console.aws.amazon.com");
+    expect(body).not.toContain("5arhuwacg4o48yxyin4kcrony");
   });
 });

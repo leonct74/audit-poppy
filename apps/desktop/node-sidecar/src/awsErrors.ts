@@ -77,3 +77,26 @@ export function isInvalidToken(err: unknown): boolean {
     name === "AuthFailure"
   );
 }
+
+/**
+ * Denied by policy — the answer is "you may not", not "something went wrong".
+ *
+ * Worth telling apart from every other failure: a Deny is stable and deliberate, so retrying
+ * cannot help and warning about it is noise. AuditPoppy meets one on every install — the
+ * platform's `CannotTamperWithAgentsPoppy` guardrail denies `iam:*` on AgentsPoppy's own role,
+ * operator user and boundary policy, which catches our `iam:ListMFADevices` read of that one
+ * user. That Deny is correct and must stay; the poppy's job is to notice and move on.
+ */
+export function isAccessDenied(err: unknown): boolean {
+  const name = errorName(err);
+  if (
+    name === "AccessDenied" ||
+    name === "AccessDeniedException" ||
+    name === "UnauthorizedOperation" ||
+    name === "AuthorizationError"
+  ) {
+    return true;
+  }
+  const meta = (err as { $metadata?: { httpStatusCode?: number } })?.$metadata;
+  return meta?.httpStatusCode === 403;
+}

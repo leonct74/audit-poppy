@@ -8,6 +8,7 @@
  * `APPROVED.policyDisclaimer`. Observed facts and customer-entered statements
  * keep their registers distinct all the way into the export.
  */
+import { documentSafe } from "./documentSafe";
 import { APPROVED } from "./naming";
 import type { ObservedPosture, Register, TscId } from "./types";
 
@@ -68,6 +69,7 @@ export const POLICY_TEMPLATES: PolicyTemplate[] = [
         body:
           "Multi-factor authentication is required for console access." +
           "{{#iamUserCount}} Current state, as observed in the cloud account: {{iamUserCount}} user accounts{{#mfaCoverage}}, {{mfaCoverage}}{{/mfaCoverage}}.{{/iamUserCount}}" +
+          "{{#mfaExclusion}} {{mfaExclusion}}{{/mfaExclusion}}" +
           "{{#mfaScanProblem}} {{mfaScanProblem}}{{/mfaScanProblem}}" +
           " The account password policy: {{passwordPolicySummary}}.",
       },
@@ -227,8 +229,17 @@ export function observedValues(posture: ObservedPosture): Record<string, string 
       posture.usersWithoutMfa === undefined
         ? undefined
         : posture.mfaUsersChecked === undefined
-          ? `of which ${posture.usersWithoutMfa} lack MFA`
-          : `of which at least ${posture.usersWithoutMfa} lack MFA — that count covers the ${posture.mfaUsersChecked} accounts we could check`,
+          ? `of which ${posture.usersWithoutMfa} ${posture.usersWithoutMfa === 1 ? "lacks" : "lack"} MFA`
+          : `of which at least ${posture.usersWithoutMfa} ${posture.usersWithoutMfa === 1 ? "lacks" : "lack"} MFA — that count covers the ${posture.mfaUsersChecked} accounts we could check`,
+    // An excluded account is a KNOWN quantity, so the sentence can be exact and still explain
+    // why the numbers do not add up. An auditor reading "11 accounts, 1 lacks MFA" and counting
+    // 10 checks deserves the missing line, and it is one sentence.
+    mfaExclusion:
+      posture.mfaUsersExcluded === undefined
+        ? undefined
+        : posture.mfaUsersExcluded === 1
+          ? "One further account is the identity AgentsPoppy itself uses; AuditPoppy is deliberately not permitted to read it, and it is not a person's login."
+          : `A further ${posture.mfaUsersExcluded} accounts are identities AuditPoppy is deliberately not permitted to read.`,
     mfaScanProblem: posture.mfaScanProblem,
     passwordPolicySummary: pwSummary,
     cloudTrailState: trail,
@@ -268,7 +279,10 @@ function renderBody(
     if (next === body) break;
     body = next;
   }
-  return body.replace(/\{\{(\w+)\}\}/g, (_, id: string) => valueOf.get(id) ?? `[${id}]`);
+  // documentSafe on the way out: this text becomes a document a customer hands to an auditor,
+  // and the one thing that must never survive into it is an identifier. Belt to the braces of
+  // classifying failures upstream — see documentSafe.ts for why both exist.
+  return body.replace(/\{\{(\w+)\}\}/g, (_, id: string) => documentSafe(valueOf.get(id) ?? `[${id}]`));
 }
 
 /**

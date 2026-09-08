@@ -184,7 +184,19 @@ export interface ObservedPosture {
    * A compliance document may not round a floor up into a fact.
    */
   mfaUsersChecked?: number;
-  /** Why the MFA scan came back short or empty, in the user's words. Never an SDK message. */
+  /**
+   * Accounts the poppy is DENIED from reading, as a matter of policy rather than a fault. Every
+   * install has at least one: the platform's `CannotTamperWithAgentsPoppy` guardrail denies
+   * `iam:*` on AgentsPoppy's own operator user, which catches our MFA read of it. Counted apart
+   * from `mfaUsersChecked` because the honest sentence differs — "excluded" is a known quantity,
+   * "could not be read" is not.
+   */
+  mfaUsersExcluded?: number;
+  /**
+   * Why the MFA scan came back short, in the user's words — for a genuine FAULT only, never for
+   * a policy exclusion, and NEVER a provider message. Provider messages carry ARNs, account ids
+   * and console links, and this string is rendered into a document a customer gives an auditor.
+   */
   mfaScanProblem?: string;
   passwordPolicy?: {
     present: boolean;
