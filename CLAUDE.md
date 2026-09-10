@@ -155,6 +155,41 @@ still considers taken. That is not a bug in the poppy — wait a few minutes and
 action. Clear the `DELETE_FAILED` stack from the poppy's own **Remove** tab — it runs as OUR
 session, which can delete what the host could not, and that contrast is itself the diagnostic.
 
+### 🚨 OPEN: setup spun forever with the stack already finished (2026-09-10, unexplained)
+
+**The observation, and it is solid.** CloudFormation reported `AuditPoppyStack UPDATE_COMPLETE` at
+23:28 local. The Evidence screen went on showing a setup-in-progress state after that, and only a
+full poppy restart cleared it. The founder called it an anomaly rather than accepting the restart
+as a fix, which is the right instinct and the reason this entry exists.
+
+**One real defect found on the way, and it is worth fixing on its own merits.** `POST /deploy`
+(`node-sidecar/src/index.ts`) has no guard against overlapping calls, and `EvidenceView.tsx`'s
+poll fires every 5s without waiting for the previous one to return. In the STORAGE_READY phase
+`advanceDeploy` re-uploads the whole snapshot Lambda zip (~3 MB) and re-issues `UpdateStack`, so
+a second tick lands while the first upload is still in flight: duplicate uploads, and a second
+`UpdateStack` against a stack already `UPDATE_IN_PROGRESS`, which throws. **Same shape as the
+rollback loop** — an unguarded poll issuing mutating work repeatedly — and that shape has now
+produced two bugs in this file, so treat any poll that mutates as suspect by default.
+
+**What was RULED OUT, so nobody re-treads it:**
+
+- `/status` is not cached — it calls `getStackState()` live on every request (`index.ts:152`), so
+  a stale cached stack cannot be clobbering the freshly polled one.
+- `App.tsx`'s `refreshStatus` has `[]` deps, so `props.status.stack` is a stable reference and the
+  effect that copies it into local state is not firing on a timer.
+- A host call that never answers is not silent: `host.ts`'s bridge rejects after 60s, which shows
+  the error banner. An endless spinner with no banner is therefore NOT a hung call.
+
+**So the defect above does not explain the observation, and it must not be written up as if it
+did.** A plausible mechanism found while looking for a bug is not the bug. What is still missing:
+whether an error banner was on screen during the spin (a failed poll sets one and leaves `stack`
+untouched), and the sidecar's log for the window — those distinguish "erroring invisibly" from
+something else entirely.
+
+**Do not patch this before a certify run.** The build that gets certified has to be the build that
+is deployed; changing the deploy path first means tearing down and repeating the whole
+deploy → use → wait cycle. Fix it after certification, then re-verify setup end to end.
+
 ### ✅ The blind sweep is FIXED on the platform — both halves, merged 2026-09-10
 
 **What it was.** The second certify run came back UNVERIFIED, and it was not index lag — the
