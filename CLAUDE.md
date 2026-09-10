@@ -134,9 +134,13 @@ is the platform's. And read the whole policy, not the lines matching the service
   dollar amount in poppy code, manifest, listing copy or screenshots.** **Policy pack in v1: INCLUDED. Host-enforced
   `machine: "aws-only"`: YES — first enforced-chip poppy.** All §11 questions decided;
   the design is complete.
-- ✅ Phase 0 de-risk LIVE since 2026-09-02 (`phase0-derisk.md`): Audit Manager cut
-  (closed to new accounts); enable order + read path verified; costs measuring for a
-  week; teardown + dead-man scheduled (09-09 / 09-20).
+- ✅ **Phase 0 CLOSED 2026-09-10** (`phase0-derisk.md`): Audit Manager cut (closed to new
+  accounts); enable order + read path verified; **nothing left running** — verified against the
+  live console. **Its "scheduled teardown + dead-man" never existed**: the file asserted two
+  scheduled tasks in confident prose and listing the account's routines returned an empty set.
+  An assistant then told the founder "do nothing, a reminder will fire". **A safety net written
+  down is not a safety net — record how to VERIFY a claim next to the claim.** Only the optional
+  cost readout is outstanding, and it is still available from billing history.
 - ✅ **Full build DONE (2026-09-02, phases 1–3 + the in-app half of 4 — DESIGN §12).**
 - ✅ **LIVE-VERIFIED END TO END against a real production account (2026-09-05 → 07):**
   install → connect → start the audit → evidence stack → snapshot → export. Six real bugs
@@ -220,7 +224,7 @@ is the platform's. And read the whole policy, not the lines matching the service
   still in the description. Reversible in one line if the founder prefers the original.
 - Next, in dependency order — **the whole listing chain is gated on certification, which is gated
   on the platform** (`LISTING.md` has the order and the two one-way steps):
-  1. phase-0 teardown + cost readout (09-09, tomorrow);
+  1. ~~phase-0 teardown~~ — done (2026-09-10); the cost readout is optional and unblocking;
   2. the platform's three delete actions land → `npm run certify -- --yes`;
   3. click-test the PACKED build in the real host — the only place `machine: "aws-only"` is
      actually proven, since the host refuses undeclared connections on the real spawn path;

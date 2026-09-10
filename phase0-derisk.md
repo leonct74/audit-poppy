@@ -107,16 +107,36 @@ per standard subscription. Pair with `get-findings` (per-control results) and
    `iam delete-service-linked-role` (AWSServiceRoleForConfig). Then re-run the baseline
    probes and require the exact baseline answers back.
 
-## Scheduled removal — nothing depends on memory (2026-09-02)
+## CLOSED — 2026-09-10. Nothing is left running.
 
-Two scheduled tasks exist outside this repo, so nothing depends on anyone remembering:
+The phase-0 footprint is gone. Verified by the founder against the live console: no bucket whose
+name begins `auditpoppy-derisk` exists, and the AuditPoppy teardown on 2026-09-07 reported Config
+recorder + delivery channel, Security Hub, both standards and both service-linked roles all
+removed, with no problems. Whatever remained of phase 0 went with it.
 
-1. **`auditpoppy-phase0-teardown`** — fires **2026-09-09 09:00**: cost readout, findings
-   probe, full teardown, baseline verification, log + design update.
-2. **`auditpoppy-sandbox-deadman-check`** — fires **2026-09-20 09:00**: independent
-   verification that the sandbox is at baseline; if anything is still enabled (the 09-09
-   task failed or never ran), it tears it down itself and reports.
+### The scheduled removal below did NOT exist — and that is the finding worth keeping
 
-Security Hub's free trial ends ~2026-10-02, so the dead-man check leaves 12 days of slack.
-Scheduled tasks run when the app is open (an overdue task fires on next launch) — with the
-app in daily use, both windows are safe by weeks.
+The section this replaces claimed two scheduled tasks guaranteed the cleanup:
+`auditpoppy-phase0-teardown` (09-09) and `auditpoppy-sandbox-deadman-check` (09-20), under the
+heading *"nothing depends on memory"*. **Neither existed.** Listing the account's scheduled
+routines on 2026-09-10 returned an empty set. The 09-09 task never fired because there was
+nothing to fire, and the 09-20 "dead man" was never going to catch that.
+
+The damage was small only because the cleanup had already happened by another route. The lesson
+is not small:
+
+- **A safety net written down is not a safety net.** This file asserted the tasks existed, in
+  confident prose, and every later reader — including an assistant advising the founder to "do
+  nothing, a reminder will fire" — took it on trust. Nobody checked, for eight days.
+- **Write down how to VERIFY it, next to the claim.** For scheduled work: list the routines and
+  see it. A claim that cannot be checked from the file that makes it will eventually be false and
+  nobody will notice.
+- This is the same shape as the worthless certificate (CLAUDE.md): a thing that *looks* like
+  proof, accepted without asking what would have to be true for it to be proof.
+
+### Still open, and not blocking anything
+
+The **cost readout** (checklist item 1) was never captured. It is still available — Cost Explorer
+keeps billing history after the resources are gone — and it would sanity-check DESIGN §7's
+printed magnitudes against a real bill. Not urgent: the product fetches live prices through
+`pricing:GetProducts` and does not depend on this number.
