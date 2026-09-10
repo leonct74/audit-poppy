@@ -155,6 +155,35 @@ still considers taken. That is not a bug in the poppy — wait a few minutes and
 action. Clear the `DELETE_FAILED` stack from the poppy's own **Remove** tab — it runs as OUR
 session, which can delete what the host could not, and that contrast is itself the diagnostic.
 
+### 🚨 The tag sweep runs on the OPERATOR key, which template v4 strips (2026-09-10)
+
+**Why the second certify run came back UNVERIFIED, and why the first certificate was hollow.**
+Not index lag — the sweep is *denied*. Traced in `agentspoppy` at `cd40ed8`:
+
+| Provider | Credentials | Same run's outcome |
+| --- | --- | --- |
+| `aws/cloudformation.ts` | `maintenanceCredentials()` | ✅ deleted the stack |
+| `aws/tagging.ts` (the tag sweep) | `operatorCredentials()` | ❌ auth-failed in **all 18+ regions** |
+| `aws/deletion.ts` (residual engine) | `operatorCredentials()` | untested, same exposure |
+
+`findResiduals` throws only when EVERY region fails AND one is an auth error — `regionsFor()` is
+the account's regions plus 18 standard ones, so this is systemic, not one disabled region. And
+`maintenance.ts`'s own header says **template v4 strips the operator user to assume-only**, listing
+the only two consumers that deliberately stay on that key: `sts.ts` hop 1 and `identity.ts`.
+`tagging.ts` and `deletion.ts` are not on that list — they were left behind.
+
+The operator key still WORKS for AssumeRole (maintenance credentials are derived from it and
+CloudFormation succeeded), and is DENIED for `tag:GetResources`. That is exactly "assume-only".
+
+**What it means beyond us:** the tag sweep IS the mechanism's I4 audit, so leaves-no-trace
+verification is blind on every v4 account, and the host's residual-deletion backstop is in the
+same position. **The harness's advice — "fix the account's read access" — is misleading: there is
+nothing on the customer's side to fix.**
+
+**Both files are `SECURITY_MECHANISM.md` §4 enforcement points**, so this needs its own approval
+window: relay the banner, let the founder run `touch .claude/mechanism-approval` themselves, walk
+the §5 checklist in the same commit. Do not patch it from here.
+
 ### ✅ CERTIFIED 2026-09-10 — and exactly half of it is proven
 
 ```
