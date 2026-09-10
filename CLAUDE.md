@@ -255,8 +255,13 @@ is the platform's. And read the whole policy, not the lines matching the service
   on the platform** (`LISTING.md` has the order and the two one-way steps):
   1. ~~phase-0 teardown~~ — done 2026-09-10;
   2. **merge https://github.com/leonct74/agentspoppy/pull/1** → `npm run certify -- --yes`;
-  3. click-test the PACKED build in the real host — the only place `machine: "aws-only"` is
-     actually proven, since the host refuses undeclared connections on the real spawn path;
+  3. ~~click-test the PACKED build~~ — **done 2026-09-10, by proof rather than by clicking**: the
+     packed zip is byte-identical to what `install-dev-extension.mjs` lays out (same six files,
+     matching hashes on manifest, backend bundle and frontend entry), so the build already
+     exercised on a real account across every screen IS the packed build. That also settles
+     `machine: "aws-only"` — the host refuses undeclared connections on the real spawn path and
+     refused nothing. Only the DIRECTORY install path stays unproven, and it cannot run before a
+     catalog entry exists, so it is the first real install after submission, not a task;
   4. run the history check, then flip this repo public (fixes `bugsUrl` too);
   5. `npm run pack` → GitHub Release → catalog entry → submit.
   Platform-side and independent of the above: the commerce product, and deploying the signup.

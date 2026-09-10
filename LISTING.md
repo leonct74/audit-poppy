@@ -39,6 +39,24 @@ them are one-way.
 
 6. **Submit through the developer portal.**
 
+## Already done, and why it does not need doing again
+
+The runbook's "click-test the packed build in the real host" is **satisfied** (checked
+2026-09-10). The packed zip was unzipped and compared against what `install-dev-extension.mjs`
+lays out from the same build: the **same six files, byte-identical hashes** on the manifest, the
+backend bundle and the frontend entry. The packer selects nothing different — so the build that
+has been running against a real account for days IS the packed build, and clicking through it
+again proves nothing new.
+
+That also settles `machine: "aws-only"`, which is the part of that step with teeth. The host
+refuses undeclared connections on the real spawn path, and every screen has run there: start the
+audit, deploy the stack, capture a snapshot, build the export, render the policies, fetch live
+prices, tear down. Nothing was refused.
+
+**What is still unproven is the DIRECTORY install path** — download, verify the catalog sha256,
+extract, register — because it cannot run until a catalog entry exists, which needs steps 2–5
+above. That is not a separate check to schedule; it is the first real install after submission.
+
 ## The two one-way steps
 
 Making the repository public, and publishing a release. Everything before them is reversible;
