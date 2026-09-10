@@ -107,15 +107,54 @@ per standard subscription. Pair with `get-findings` (per-control results) and
    `iam delete-service-linked-role` (AWSServiceRoleForConfig). Then re-run the baseline
    probes and require the exact baseline answers back.
 
-## STILL RUNNING as of 2026-09-10 — and closed prematurely once, in this file
+## CLOSED 2026-09-10 — with a named, deliberate residue
 
-The phase-0 footprint is **live in the sandbox account**: the `auditpoppy-derisk-…` bucket is
-there. Teardown is overdue (it was due 09-09) and Security Hub's free trial in that account ends
-around 2026-10-02, after which it stops being pennies.
+Torn down by hand in the console, in this order, each step confirmed by the founder before the
+next: Security Hub (found already inactive) → Config **stop recording** → empty and delete the
+`auditpoppy-derisk-…` bucket.
 
-**This section briefly said the opposite.** The founder was asked to check the console for that
-bucket, reported not seeing it, and this file was updated to "CLOSED". The check had been run in
-the PRODUCTION account — the one AuditPoppy was tested against and torn down on 09-07 — not the
+**Final state — nothing costs anything, and two inert objects remain:**
+
+| Thing | State | Why |
+|---|---|---|
+| Cost, 09-02 → 09-10 | **$0.00** | Security Hub free trial + a near-empty account |
+| Security Hub | off | was already inactive when checked |
+| Config recording | **stopped** | this is what was metering; the bill stops here |
+| Delivery bucket | **deleted** | emptied, then deleted |
+| Config recorder + delivery channel (`default`) | **still there, stopped, free** | see below |
+| `AWSServiceRoleForConfig` | still there | AWS refuses to delete it while a recorder exists |
+
+### Finding 6: the AWS Config console cannot delete a recorder or a delivery channel
+
+There is no Delete anywhere on Config → Settings — only Edit and Start/Stop recording. The pair
+can be removed **only** through the API (`delete-delivery-channel`, then
+`delete-configuration-recorder`). The founder has no CLI profile for the sandbox, so they stay.
+
+Left deliberately, not forgotten: recording is stopped, so nothing meters and nothing is written.
+The only consequence is log noise from a delivery channel pointing at a bucket that no longer
+exists.
+
+**This is a product argument, not just a chore.** A customer who turns Config on by hand and
+later wants it gone cannot finish the job in the console — the undo simply is not there. AuditPoppy's
+teardown does it through the API, which is why "we remove what we turned on" is a real promise
+rather than a restatement of what the console already offers (DESIGN §3).
+
+### What the $0.00 does and does not prove
+
+It **does** confirm the free-trial story the product tells: a week of Security Hub on a small
+account genuinely costs nothing, so the trial clock on the Costs screen is honest, and the "cents
+per month for a small account" line holds.
+
+It **does not** validate the printed estimate for a populated account — this sandbox had almost
+nothing in it, and Config bills per configuration item recorded. The estimate the product shows
+is computed from live `pricing:GetProducts` against the customer's own resource count, so it does
+not depend on this number; but nobody should cite $0.00 as evidence that AuditPoppy is free to
+run. If a real figure is ever wanted, the production account ran 09-05 → 09-07 with real
+resources and its billing history is still there.
+
+**This section briefly said this was already closed, three messages earlier.** The founder was
+asked to check the console for that bucket, reported not seeing it, and this file was updated to
+"CLOSED" — then the bucket turned up. The check had been run in the PRODUCTION account — the one AuditPoppy was tested against and torn down on 09-07 — not the
 sandbox. The question never said which account to look in, and the answer was taken as though it
 had.
 

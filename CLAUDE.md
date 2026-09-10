@@ -134,15 +134,24 @@ is the platform's. And read the whole policy, not the lines matching the service
   dollar amount in poppy code, manifest, listing copy or screenshots.** **Policy pack in v1: INCLUDED. Host-enforced
   `machine: "aws-only"`: YES — first enforced-chip poppy.** All §11 questions decided;
   the design is complete.
-- ⚠️ **Phase 0 STILL RUNNING in the SANDBOX account** (`phase0-derisk.md`) — teardown overdue
-  since 09-09; the free trial there ends ~10-02. **THERE ARE TWO ACCOUNTS**, and conflating them
-  has now cost time twice: the sandbox (phase 0, eu-west-1, its own CLI profile) and production
-  (where AuditPoppy was tested and cleanly torn down on 09-07). Ask *which account* before
-  believing any check. Two further findings recorded there: its "scheduled teardown + dead-man"
-  **never existed** (listing the account's routines returns an empty set) while the file asserted
-  them in confident prose, and this file was briefly marked CLOSED on the strength of a console
-  check run in the wrong account. **A safety net written down is not a safety net; record how to
-  VERIFY a claim next to the claim.**
+- ✅ **Phase 0 CLOSED 2026-09-10** (`phase0-derisk.md`) — torn down by hand in the console.
+  **The week cost $0.00**, which confirms the free-trial story but proves nothing about a
+  populated account; never cite it as "AuditPoppy is free to run". A deliberate residue is named
+  there: the Config recorder and delivery channel remain, stopped and free, because **the AWS
+  Config console has no delete for them at all** (finding 6) — API only, and there is no CLI
+  profile for that account. That is a product argument too: a customer cannot undo Config by hand,
+  which is what makes our teardown promise worth something.
+  Three process findings, all the same shape — *something that looks like proof, accepted without
+  asking what would have to be true for it to be proof*:
+  1. **THERE ARE TWO ACCOUNTS** — sandbox (phase 0, eu-west-1) and production (tested and torn
+     down 09-07). Conflating them cost time twice in three days. **Ask which account before
+     believing any check.**
+  2. Its "scheduled teardown + dead-man" **never existed** — the file asserted two scheduled tasks
+     in confident prose; listing the account's routines returns an empty set. An assistant relayed
+     that to the founder as "do nothing, a reminder will fire".
+  3. This file was marked CLOSED on a console check run in the wrong account, and reopened one
+     message later.
+  **A safety net written down is not a safety net. Record how to VERIFY a claim beside the claim.**
 - ✅ **Full build DONE (2026-09-02, phases 1–3 + the in-app half of 4 — DESIGN §12).**
 - ✅ **LIVE-VERIFIED END TO END against a real production account (2026-09-05 → 07):**
   install → connect → start the audit → evidence stack → snapshot → export. Six real bugs
@@ -226,7 +235,7 @@ is the platform's. And read the whole policy, not the lines matching the service
   still in the description. Reversible in one line if the founder prefers the original.
 - Next, in dependency order — **the whole listing chain is gated on certification, which is gated
   on the platform** (`LISTING.md` has the order and the two one-way steps):
-  1. phase-0 teardown in the SANDBOX account — overdue, in progress 2026-09-10;
+  1. ~~phase-0 teardown~~ — done 2026-09-10;
   2. the platform's three delete actions land → `npm run certify -- --yes`;
   3. click-test the PACKED build in the real host — the only place `machine: "aws-only"` is
      actually proven, since the host refuses undeclared connections on the real spawn path;
