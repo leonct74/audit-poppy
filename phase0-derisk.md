@@ -146,11 +146,29 @@ account genuinely costs nothing, so the trial clock on the Costs screen is hones
 per month for a small account" line holds.
 
 It **does not** validate the printed estimate for a populated account — this sandbox had almost
-nothing in it, and Config bills per configuration item recorded. The estimate the product shows
-is computed from live `pricing:GetProducts` against the customer's own resource count, so it does
-not depend on this number; but nobody should cite $0.00 as evidence that AuditPoppy is free to
-run. If a real figure is ever wanted, the production account ran 09-05 → 09-07 with real
-resources and its billing history is still there.
+nothing in it, and Config bills per configuration item recorded. Nobody should cite $0.00 as
+evidence that AuditPoppy is free to run.
+
+### Finding 7: what a REAL account costs — the estimate, live-priced (2026-09-10)
+
+Read straight off the Costs screen in a production account of roughly **1,600 resources**, with
+rates fetched live rather than from a built-in table:
+
+| Line | ≈ per month | What drives it |
+|---|---|---|
+| AWS Config — the change record | **$15.78** | ~4,940 recorded changes + ~970 rule evaluations |
+| AWS Security Hub — the audit checks | **$3.63** | ~3,630 checks across 121 controls |
+| Evidence bucket + monthly snapshot | **$0.05** | the bucket, plus one Lambda run a month |
+| **Total while enabled** | ****$19.46**** | |
+
+Two things worth keeping. **Config is 81% of it** — the audit checks are nearly free by
+comparison, and the expensive part is the change recording SOC 2 actually requires, so there is
+no cheaper design hiding here. And **our own stack is a rounding error** at five cents: the
+product's cost is almost entirely the customer's cloud provider billing them for their own
+compliance data, which is exactly the story the Costs screen tells.
+
+An estimate, not a bill — but computed from that account's real shape, which is the closest thing
+to a real figure short of running it for a month.
 
 **This section briefly said this was already closed, three messages earlier.** The founder was
 asked to check the console for that bucket, reported not seeing it, and this file was updated to

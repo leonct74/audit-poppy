@@ -30,7 +30,12 @@ export function CostsView(props: { status: StatusResponse; refreshStatus: () => 
   }, []);
 
   const readiness = props.status.readiness && "standards" in props.status.readiness ? props.status.readiness : null;
-  const checksOn = readiness ? readiness.standards.some((s) => s.status !== "NOT_ENABLED") : false;
+  // THREE states, not two. "We could not read your account" is not "nothing is running" — and
+  // defaulting the unknown to the reassuring answer is how a cost screen tells someone they are
+  // safe while they are being billed. It is the same mistake as a green certificate for a run
+  // that tore down nothing.
+  const checksOn = readiness ? readiness.standards.some((s) => s.status !== "NOT_ENABLED") : null;
+  const stackUp = props.status.stack.status !== "ABSENT";
   const oursOn = props.status.ledger.entries.some((e) => !e.preExisting);
   const trial = costs?.freeTrial ?? props.status.freeTrial;
   const monthly = costs?.estimate.totalMonthlyUsd;
@@ -39,12 +44,30 @@ export function CostsView(props: { status: StatusResponse; refreshStatus: () => 
 
   return (
     <>
-      {!checksOn ? (
+      {checksOn === false && !stackUp ? (
         <Banner kind="ok">
           <div>
             <strong>$0 — nothing running, nothing billing.</strong> No checking service is enabled and no
             stack is deployed{oursOn ? "" : " by AuditPoppy"}. Costs start only when you turn things on, and
             each line below shows what they would be.
+          </div>
+        </Banner>
+      ) : null}
+      {checksOn === false && stackUp ? (
+        <Banner kind="warn">
+          <div>
+            <strong>The checks are off, but the evidence stack is still deployed.</strong> That is the bucket,
+            the table and the monthly snapshot — cents a month, not the main cost, but it is not nothing.
+            Remove AuditPoppy below to take it away.
+          </div>
+        </Banner>
+      ) : null}
+      {checksOn === null ? (
+        <Banner kind="warn">
+          <div>
+            <strong>We could not read what is switched on in your account just now</strong>, so this screen
+            cannot tell you whether anything is billing. The figures below are what these services cost while
+            enabled — not a statement that they are. Open this tab again in a minute.
           </div>
         </Banner>
       ) : null}
@@ -78,8 +101,17 @@ export function CostsView(props: { status: StatusResponse; refreshStatus: () => 
                 </li>
               ))}
             </ul>
+            {/* The number needs a tense. "Total while enabled" read the same whether the audit was
+                running or not, so a person looking at this screen could not tell a forecast from a
+                bill — the founder could not, on 2026-09-10, and they built it. */}
             <div className="spread" style={{ borderTop: "1px solid var(--poppy-border)", paddingTop: 8 }}>
-              <strong>Total while enabled</strong>
+              <strong>
+                {checksOn === true
+                  ? "Running now — this is what it is costing"
+                  : checksOn === false
+                    ? "Not running. If you turn it on"
+                    : "While enabled"}
+              </strong>
               <strong>≈ ${costs.estimate.totalMonthlyUsd.toFixed(2)}/month</strong>
             </div>
             {/* The monthly figure alone reads as "so a short trial is nearly free" — and that is
@@ -88,10 +120,15 @@ export function CostsView(props: { status: StatusResponse; refreshStatus: () => 
                 where the number is, not in a footnote. */}
             <div className="spread" style={{ paddingTop: 6 }}>
               <span className="small">
-                <strong>Charged as soon as you turn it on</strong>
+                <strong>
+                  {checksOn === true ? "Already charged, when it was switched on" : "Charged as soon as you turn it on"}
+                </strong>
                 <div className="muted">
                   Cloud config recording bills per recorded item, not per hour — switching it on records every
-                  resource you have once, right away. Turning it off five minutes later doesn't avoid this part.
+                  resource you have once, right away.{" "}
+                  {checksOn === true
+                    ? "That one-off has already happened; switching off now stops the monthly part, not this."
+                    : "Turning it off five minutes later doesn't avoid this part."}
                 </div>
               </span>
               <strong className="small">
@@ -175,7 +212,9 @@ export function CostsView(props: { status: StatusResponse; refreshStatus: () => 
       <RemovePanel
         accountId={props.status.account}
         exportedThisSession={props.exportedThisSession === true}
-        auditRunning={checksOn}
+        // Unknown counts as running here: the panel uses it only to OFFER the gentler route
+        // ("stop first, it's reversible"), so the wrong guess costs a sentence, not a mistake.
+        auditRunning={checksOn !== false}
         refreshStatus={props.refreshStatus}
       />
     </>

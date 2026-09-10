@@ -136,7 +136,10 @@ is the platform's. And read the whole policy, not the lines matching the service
   the design is complete.
 - ✅ **Phase 0 CLOSED 2026-09-10** (`phase0-derisk.md`) — torn down by hand in the console.
   **The week cost $0.00**, which confirms the free-trial story but proves nothing about a
-  populated account; never cite it as "AuditPoppy is free to run". A deliberate residue is named
+  populated account; never cite it as "AuditPoppy is free to run". **A real account of ~1,600
+  resources estimates at ≈$19.46/month, live-priced — and AWS Config is 81% of it** while our own
+  stack is five cents (finding 7). The expensive part is the change recording SOC 2 requires, so
+  there is no cheaper design hiding in there. A deliberate residue is named
   there: the Config recorder and delivery channel remain, stopped and free, because **the AWS
   Config console has no delete for them at all** (finding 6) — API only, and there is no CLI
   profile for that account. That is a product argument too: a customer cannot undo Config by hand,
@@ -224,6 +227,14 @@ is the platform's. And read the whole policy, not the lines matching the service
   Fixed by classify-then-write (never pass a provider message through) plus `documentSafe()` as a
   backstop on every value entering prose. DESIGN §5b. **Whenever you add text to a document,
   ask what an error string might carry into it.**
+- 🚨 **Costs screen could not tell a forecast from a bill (2026-09-10).** "Total while enabled"
+  and "Charged as soon as you turn it on" rendered IDENTICALLY whether the audit was running or
+  not — so the founder, who built it, could not tell from the screen whether their own account was
+  billing. Once running, "charged as soon as you turn it on" is actively false. Every figure now
+  carries a tense. Worse, the same read: `checksOn` collapsed "nothing is enabled" and "we could
+  not read your account" into one falsy value, so a FAILED read rendered the reassuring
+  *"$0 — nothing running"* banner. **An unknown must never default to the reassuring answer** —
+  same shape as the certificate that proved tearing down nothing leaves nothing.
 - ✅ **POLICIES SCREEN LIVE-VERIFIED (2026-09-08)** — the last item on the "never exercised live"
   list. Observed facts pre-fill correctly, typed answers persist across a tab switch, and they
   render into the policy body. **Every screen has now run against a real account.**
