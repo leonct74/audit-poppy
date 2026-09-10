@@ -102,6 +102,13 @@ from a grep that only looked at `lambda:` lines, and that cost a second failed c
 | `AWS::S3::BucketPolicy` | `s3:DeleteBucketPolicy` | ✗ — it has `DeleteBucket`, a different action |
 | `AWS::DynamoDB::Table` | `dynamodb:DescribeTable` (polled to confirm) | ✗ — it has `DeleteTable`, not the poll |
 
+**STATUS 2026-09-10: fixed, awaiting merge — https://github.com/leonct74/agentspoppy/pull/1.**
+`lambda:RemovePermission` had already landed on `main` (the public-source mirror is stale, which is
+why an earlier check here read "none of the three"); that PR adds the other two plus the tests that
+pin them. **Certification stays blocked until it merges.** Nothing in this repo is waiting on
+anything else. When it merges: `npm run certify -- --yes`, remembering that certify needs the poppy
+deployed AND USED first.
+
 The stack ends in `DELETE_FAILED` and no certificate is written. This is not AuditPoppy-shaped:
 any poppy with a scheduled Lambda, a bucket policy or a table hits it. DESIGN §3 records why no
 workaround exists on this side. **Our own session has all three**, so AuditPoppy's own Remove
@@ -247,7 +254,7 @@ is the platform's. And read the whole policy, not the lines matching the service
 - Next, in dependency order — **the whole listing chain is gated on certification, which is gated
   on the platform** (`LISTING.md` has the order and the two one-way steps):
   1. ~~phase-0 teardown~~ — done 2026-09-10;
-  2. the platform's three delete actions land → `npm run certify -- --yes`;
+  2. **merge https://github.com/leonct74/agentspoppy/pull/1** → `npm run certify -- --yes`;
   3. click-test the PACKED build in the real host — the only place `machine: "aws-only"` is
      actually proven, since the host refuses undeclared connections on the real spawn path;
   4. run the history check, then flip this repo public (fixes `bugsUrl` too);
