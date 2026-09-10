@@ -102,14 +102,31 @@ from a grep that only looked at `lambda:` lines, and that cost a second failed c
 | `AWS::S3::BucketPolicy` | `s3:DeleteBucketPolicy` | ✗ — it has `DeleteBucket`, a different action |
 | `AWS::DynamoDB::Table` | `dynamodb:DescribeTable` (polled to confirm) | ✗ — it has `DeleteTable`, not the poll |
 
-**It was FOUR actions, not three (2026-09-10).** PR #1 merged the first three; the very next
-certify run stranded on `iam:DeleteRolePolicy`, because the policy carried **no `iam:` action at
-all**. Deleting `AWS::IAM::Role` is a sequence — enumerate inline policies, delete each, detach
-managed ones, delete the role, read it back — and **any poppy that deploys compute deploys a
-role**, so this is close to every poppy in the directory.
-**https://github.com/leonct74/agentspoppy/pull/2 fixes it and is open.**
+**It was TEN actions across two PRs, not three (2026-09-10) — and both are MERGED.** PR #1 took the
+first three; the very next certify run stranded on `iam:DeleteRolePolicy`, because the policy
+carried **no `iam:` action at all**. Deleting `AWS::IAM::Role` is a sequence — enumerate inline
+policies, delete each, detach managed ones, delete the role, read it back — and **any poppy that
+deploys compute deploys a role**. PR #2 added all seven, and review reshaped it twice, both times
+correctly:
 
-**The lesson that outlives these four actions:** each one was found by burning a full
+- The three MUTATING actions are **tag-scoped** (`HostRoleTeardown`, tag present, role ARNs).
+  Both reasons the rest of that policy is unconditioned fail for IAM: roles support
+  `aws:ResourceTag`, and an orphaned role costs nothing.
+- The four READS are deliberately **unconditioned** (`HostRoleTeardownReads`, role ARNs) — and
+  this is the subtle one. `Null: "false"` needs the tag key in the request context, which needs a
+  resource to read it from; CloudFormation reads the role back **after** `DeleteRole`, when there
+  is no role and no tag context, so a tagged read returns **AccessDenied where NoSuchEntity was
+  the success signal**. The stack would strand on the last step of its own successful deletion.
+- `iam:DetachRolePolicy` needs a **second, unconditioned statement on the POLICY ARNs**: the call
+  has two required resource types, and an execution role's managed policy is usually AWS-managed
+  and can never carry our tag.
+
+Verified on `main` by reading the file, not by trusting the merge notification.
+
+**The lesson that outlives these ten actions — and the shape to look for next time: FOUR OF THE
+FIVE gaps were actions that do not look like deletions** (`RemovePermission`, `DescribeTable`, and
+the role read-backs). Anything that tries to generate this list by matching `Delete*` names would
+have missed nearly all of them; it has to model the CALL SEQUENCE per resource type. each one was found by burning a full
 deploy-use-certify cycle in a real account, one at a time, because the policy is maintained
 action-by-action against no model of what a stack can contain. `DELETE_TIME_ACTIONS` in
 `maintenance.test.ts` is now that model, and every fix has been pinned into it — but it is still
@@ -272,11 +289,10 @@ is the platform's. And read the whole policy, not the lines matching the service
 - Next, in dependency order — **the whole listing chain is gated on certification, which is gated
   on the platform** (`LISTING.md` has the order and the two one-way steps):
   1. ~~phase-0 teardown~~ — done 2026-09-10;
-  2. **merge https://github.com/leonct74/agentspoppy/pull/2** (PR #1 merged; the next certify run
-     found a fourth gap, `iam:*` for role deletion) → then deploy, USE, and
-     `npm run certify -- --yes`. After a failed run the stack sits in `DELETE_FAILED`: clear it
-     from the poppy's own **Remove** screen, which runs as OUR session and can delete what the
-     host could not;
+  2. ~~the platform fixes~~ — **both merged 2026-09-10** (agentspoppy #1 and #2, ten actions).
+     **`npm run certify -- --yes` is next**, after deploy → start the audit → evidence stack →
+     capture a snapshot. After a failed run the stack sits in `DELETE_FAILED`: clear it from the
+     poppy's own **Remove** tab, which runs as OUR session and can delete what the host could not;
   3. ~~click-test the PACKED build~~ — **done 2026-09-10, by proof rather than by clicking**: the
      packed zip is byte-identical to what `install-dev-extension.mjs` lays out (same six files,
      matching hashes on manifest, backend bundle and frontend entry), so the build already
