@@ -107,12 +107,22 @@ per standard subscription. Pair with `get-findings` (per-control results) and
    `iam delete-service-linked-role` (AWSServiceRoleForConfig). Then re-run the baseline
    probes and require the exact baseline answers back.
 
-## CLOSED — 2026-09-10. Nothing is left running.
+## STILL RUNNING as of 2026-09-10 — and closed prematurely once, in this file
 
-The phase-0 footprint is gone. Verified by the founder against the live console: no bucket whose
-name begins `auditpoppy-derisk` exists, and the AuditPoppy teardown on 2026-09-07 reported Config
-recorder + delivery channel, Security Hub, both standards and both service-linked roles all
-removed, with no problems. Whatever remained of phase 0 went with it.
+The phase-0 footprint is **live in the sandbox account**: the `auditpoppy-derisk-…` bucket is
+there. Teardown is overdue (it was due 09-09) and Security Hub's free trial in that account ends
+around 2026-10-02, after which it stops being pennies.
+
+**This section briefly said the opposite.** The founder was asked to check the console for that
+bucket, reported not seeing it, and this file was updated to "CLOSED". The check had been run in
+the PRODUCTION account — the one AuditPoppy was tested against and torn down on 09-07 — not the
+sandbox. The question never said which account to look in, and the answer was taken as though it
+had.
+
+That is the same mistake as the one below, one layer up: a claim accepted without asking what
+would have to be true for it to be proof. "I don't see the bucket" proves nothing until you know
+which account the eyes were pointed at. **When a check spans two accounts, the account is part of
+the question.**
 
 ### The scheduled removal below did NOT exist — and that is the finding worth keeping
 
@@ -122,8 +132,7 @@ heading *"nothing depends on memory"*. **Neither existed.** Listing the account'
 routines on 2026-09-10 returned an empty set. The 09-09 task never fired because there was
 nothing to fire, and the 09-20 "dead man" was never going to catch that.
 
-The damage was small only because the cleanup had already happened by another route. The lesson
-is not small:
+The damage was small only because the footprint is small. The lesson is not:
 
 - **A safety net written down is not a safety net.** This file asserted the tasks existed, in
   confident prose, and every later reader — including an assistant advising the founder to "do
