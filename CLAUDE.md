@@ -88,65 +88,60 @@ is the part of teardown most likely to break. The certificate it writes
 (`leaves-no-trace.cert.json`) is gitignored: it records the AWS account the run happened in, and
 this repo goes public.
 
-**Certification is BLOCKED on a platform fix (2026-09-07), not on anything in this repo.** The
-host's maintenance session — which is what certify deletes stacks with — cannot delete three of
-this stack's resource types. CloudFormation deletes a stack with the CALLER's credentials, so
-its session policy (`agentspoppy`, `packages/broker/src/aws/maintenance.ts`,
-`MAINTENANCE_POLICY_STATEMENTS`) has to cover every resource type a poppy's template creates.
-**It is THREE actions, not one** — the first reading of this said `lambda:RemovePermission` alone,
-from a grep that only looked at `lambda:` lines, and that cost a second failed cycle:
+**✅ Certification was BLOCKED on the platform and is not any more — ten actions across
+`agentspoppy` PRs #1 and #2, both merged 2026-09-10.** Verified on `main` by reading
+`packages/broker/src/aws/maintenance.ts` there, not by trusting a merge notification.
 
-| Resource that sticks | Action CloudFormation calls | In the maintenance policy |
+**Why the host needed anything at all:** CloudFormation deletes a stack with the CALLER's
+credentials, and certify deletes stacks with the HOST's maintenance session — so that session's
+policy (`MAINTENANCE_POLICY_STATEMENTS`) has to cover every resource type any poppy's template
+can contain. When it does not, the stack ends in `DELETE_FAILED` and no certificate is written.
+**A poppy cannot rescue itself from this**: AuditPoppy grants itself exactly the same actions on
+exactly its own role and its teardown hook runs FIRST, and the run still failed under the host's
+principal, because `service.teardown()` issues its own `DeleteStack` after the hook returns.
+
+What was missing, in the order it was found — each one costing a full deploy-use-certify cycle in
+a real account:
+
+| Resource | What CloudFormation calls | Found |
 | --- | --- | --- |
-| `AWS::Lambda::Permission` | `lambda:RemovePermission` | ✗ |
-| `AWS::S3::BucketPolicy` | `s3:DeleteBucketPolicy` | ✗ — it has `DeleteBucket`, a different action |
-| `AWS::DynamoDB::Table` | `dynamodb:DescribeTable` (polled to confirm) | ✗ — it has `DeleteTable`, not the poll |
+| `AWS::Lambda::Permission` | `lambda:RemovePermission` | 09-07 |
+| `AWS::S3::BucketPolicy` | `s3:DeleteBucketPolicy` — not `DeleteBucket`, a different action | 09-10, PR #1 |
+| `AWS::DynamoDB::Table` | `dynamodb:DescribeTable`, polled after the async delete | 09-10, PR #1 |
+| `AWS::IAM::Role` | seven: enumerate inline policies, delete each, detach managed, delete, read back | 09-10, PR #2 |
 
-**It was TEN actions across two PRs, not three (2026-09-10) — and both are MERGED.** PR #1 took the
-first three; the very next certify run stranded on `iam:DeleteRolePolicy`, because the policy
-carried **no `iam:` action at all**. Deleting `AWS::IAM::Role` is a sequence — enumerate inline
-policies, delete each, detach managed ones, delete the role, read it back — and **any poppy that
-deploys compute deploys a role**. PR #2 added all seven, and review reshaped it twice, both times
-correctly:
+Review reshaped PR #2 twice, both times correctly, and the reasoning is worth keeping:
 
-- The three MUTATING actions are **tag-scoped** (`HostRoleTeardown`, tag present, role ARNs).
+- The three MUTATING IAM actions are **tag-scoped** (`HostRoleTeardown`, tag present, role ARNs).
   Both reasons the rest of that policy is unconditioned fail for IAM: roles support
   `aws:ResourceTag`, and an orphaned role costs nothing.
-- The four READS are deliberately **unconditioned** (`HostRoleTeardownReads`, role ARNs) — and
-  this is the subtle one. `Null: "false"` needs the tag key in the request context, which needs a
-  resource to read it from; CloudFormation reads the role back **after** `DeleteRole`, when there
-  is no role and no tag context, so a tagged read returns **AccessDenied where NoSuchEntity was
-  the success signal**. The stack would strand on the last step of its own successful deletion.
+- The four READS are deliberately **unconditioned** (`HostRoleTeardownReads`, role ARNs), and this
+  is the subtle one. `Null: "false"` needs the tag key in the request context, which needs a
+  resource to read it from — and CloudFormation reads the role back **after** `DeleteRole`, when
+  there is no role and no tag context. A tagged read would return **AccessDenied where
+  NoSuchEntity was the success signal**, stranding the stack on the last step of its own
+  successful deletion.
 - `iam:DetachRolePolicy` needs a **second, unconditioned statement on the POLICY ARNs**: the call
   has two required resource types, and an execution role's managed policy is usually AWS-managed
   and can never carry our tag.
 
-Verified on `main` by reading the file, not by trusting the merge notification.
-
-**The lesson that outlives these ten actions — and the shape to look for next time: FOUR OF THE
-FIVE gaps were actions that do not look like deletions** (`RemovePermission`, `DescribeTable`, and
-the role read-backs). Anything that tries to generate this list by matching `Delete*` names would
-have missed nearly all of them; it has to model the CALL SEQUENCE per resource type. each one was found by burning a full
-deploy-use-certify cycle in a real account, one at a time, because the policy is maintained
-action-by-action against no model of what a stack can contain. `DELETE_TIME_ACTIONS` in
-`maintenance.test.ts` is now that model, and every fix has been pinned into it — but it is still
-hand-maintained. Deriving it from the resource types the manifest validator permits is the thing
-that ends the class; it is raised in both PRs and not yet done.
-
-**And a poppy cannot rescue itself from this.** AuditPoppy grants itself exactly these actions on
-exactly this role, and its teardown hook ran first — the run still failed under the HOST's
-principal, because `service.teardown()` issues its own `DeleteStack` after the hook returns. The
-host's credentials drive the deletion no matter how completely the poppy cleaned up.
-
-The stack ends in `DELETE_FAILED` and no certificate is written. This is not AuditPoppy-shaped:
-any poppy with a scheduled Lambda, a bucket policy or a table hits it. DESIGN §3 records why no
-workaround exists on this side. **Our own session has all three**, so AuditPoppy's own Remove
-screen clears a stack that certify could not — which is the diagnostic: if the app can delete it
-and the host cannot, the gap is the host's.
+**The lesson that outlives the ten actions — the shape to look for next time: FOUR OF THE FIVE
+gaps were actions that do not look like deletions** (`RemovePermission`, `DescribeTable`, and the
+role read-backs). Anything generating this list by matching `Delete*` names would have missed
+nearly all of them; it has to model the CALL SEQUENCE per resource type. `DELETE_TIME_ACTIONS` in
+`maintenance.test.ts` is that model now and every fix is pinned into it, but it is still
+hand-maintained. Deriving it from the resource types the manifest validator permits is what ends
+the class; raised in both PRs, not yet done.
 
 **When an AccessDenied appears, read the PRINCIPAL first:** `agentspoppy-<uuid>` is this poppy's
 session and the fix is our manifest; `AgentsPoppyHost-maintenance` is the host's own and the fix
-is the platform's. And read the whole policy, not the lines matching the service you suspect.
+is the platform's. And read the whole policy, not the lines matching the service you suspect —
+the first reading of the 09-07 failure said `lambda:RemovePermission` alone, off a grep that only
+looked at `lambda:` lines, and that cost a cycle on its own.
+
+**If a run strands again:** the CloudFormation **Events** tab names the resource and the denied
+action. Clear the `DELETE_FAILED` stack from the poppy's own **Remove** tab — it runs as OUR
+session, which can delete what the host could not, and that contrast is itself the diagnostic.
 
 ## The three laws that bind every word and grant
 
