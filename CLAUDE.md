@@ -139,6 +139,18 @@ is the platform's. And read the whole policy, not the lines matching the service
 the first reading of the 09-07 failure said `lambda:RemovePermission` alone, off a grep that only
 looked at `lambda:` lines, and that cost a cycle on its own.
 
+**🚨 A rolled-back create is cleared ONCE and then stops (fixed 2026-09-10).** The first version of
+that recovery deleted the stack and returned live state, so the next poll created again: create →
+roll back → delete → create, every five seconds, under a "Creating…" label, and CloudFormation's
+rollback reason died with each stack. **An unbounded retry that hides its own cause is worse than
+the failure it retries past.** Now the reason is carried out before the delete, the state comes
+back FAILED carrying it, and the retry is a button press — one press, one attempt.
+
+**Redeploying immediately after certify is the case most likely to roll back.** Certify has just
+deleted the evidence bucket and the snapshot role; S3 bucket names and IAM role names are both
+eventually consistent after deletion, so recreating within minutes can fail on a name that AWS
+still considers taken. That is not a bug in the poppy — wait a few minutes and press again.
+
 **If a run strands again:** the CloudFormation **Events** tab names the resource and the denied
 action. Clear the `DELETE_FAILED` stack from the poppy's own **Remove** tab — it runs as OUR
 session, which can delete what the host could not, and that contrast is itself the diagnostic.

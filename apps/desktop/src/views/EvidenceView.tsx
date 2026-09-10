@@ -25,10 +25,12 @@ export function EvidenceView(props: { status: StatusResponse; refreshStatus: () 
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
+  // NOT ROLLBACK_COMPLETE: a rolled-back create is cleared and then STOPS, so the person can read
+  // why before pressing again. Polling through it is what made an unbounded create/rollback loop
+  // that showed "Creating…" forever.
   const inProgress =
     stack.status === "CREATING" || stack.status === "UPDATING" || stack.status === "STORAGE_READY" ||
-    // A rolled-back create is deleted and re-created for you, so keep polling through it.
-    stack.rawStatus === "ROLLBACK_COMPLETE" || stack.status === "DELETING";
+    stack.status === "DELETING";
   // A half-finished REMOVAL is not a setup failure, and retrying setup cannot clear it — only
   // finishing the removal can, and that deletes evidence, so it stays behind the removal screen.
   const stuckOnRemoval = stack.rawStatus === "DELETE_FAILED";

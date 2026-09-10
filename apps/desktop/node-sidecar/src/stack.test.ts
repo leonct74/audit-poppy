@@ -99,14 +99,27 @@ describe("stack state is derived from AWS, never from memory (AGENTS.md §5)", (
 });
 
 describe("a stack left in a failed state by something OTHER than a create", () => {
-  it("deletes a rolled-back create and starts over — nothing was in it to lose", async () => {
+  it("clears a rolled-back create, then STOPS — one press is one attempt", async () => {
+    // The first version deleted and returned live state, so the very next poll created again:
+    // create → roll back → delete → create, every few seconds, under a "Creating…" label. An
+    // unbounded retry that hides its own cause is worse than the failure it retries past.
     const clients = fakeClients();
     clients.fakes.cloudformation
-      .on("DescribeStacksCommand", describeStacks("ROLLBACK_COMPLETE", ""))
-      .on("DeleteStackCommand", {});
-    await advanceDeploy(clients, deployInput);
+      .on("DescribeStacksCommand", {
+        Stacks: [{ StackStatus: "ROLLBACK_COMPLETE", StackStatusReason: "bucket already exists" }],
+      })
+      .on("DeleteStackCommand", {})
+      .on("CreateStackCommand", {});
+    const state = await advanceDeploy(clients, deployInput);
+
     assert.equal(clients.fakes.cloudformation.sent("DeleteStackCommand").length, 1,
       "a ROLLBACK_COMPLETE stack holds its own name until it is deleted");
+    assert.equal(clients.fakes.cloudformation.sent("CreateStackCommand").length, 0,
+      "and must NOT create again in the same step — that is the loop");
+    assert.equal(state.status, "FAILED");
+    // The reason is carried OUT before the delete destroys it — it is the only thing that says why.
+    assert.match(state.statusReason ?? "", /bucket already exists/);
+    assert.match(state.statusReason ?? "", /try again/);
   });
 
   it("NEVER deletes a stack whose removal half-finished — that would destroy the evidence bucket", async () => {

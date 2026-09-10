@@ -84,8 +84,17 @@ export async function advanceDeploy(clients: Clients, input: DeployInput): Promi
   const state = await getStackState(clients);
 
   // A create that failed and rolled back leaves a stack holding NOTHING, and AWS will not let
-  // the name be reused until it is deleted. Deleting it is the documented remedy and destroys
-  // nothing, so the retry the screen offers can actually do it.
+  // the name be reused until it is deleted. So delete it — but CARRY THE REASON OUT FIRST, and
+  // then STOP.
+  //
+  // The first version of this deleted and returned live state, which let the caller create again
+  // on the very next poll. That is an unbounded retry: create → roll back → delete → create,
+  // every few seconds, showing "Creating…" the whole time, and it erases the one thing that
+  // explains the failure — CloudFormation's rollback reason dies with the stack. A loop that
+  // hides its own cause is worse than the failure it is retrying past.
+  //
+  // Now: one delete, then FAILED carrying the reason, and the retry is a button press. One press
+  // is one attempt, and the person can see what went wrong between them.
   //
   // DELETE_FAILED is deliberately NOT handled here, though it looks like the same shape. It
   // means a previous REMOVAL got part-way, and nothing in this template is DeletionPolicy:
@@ -95,8 +104,15 @@ export async function advanceDeploy(clients: Clients, input: DeployInput): Promi
   // screen's export gate and type-to-confirm; the Evidence screen says so instead of offering a
   // retry that silently does nothing (which is what the founder hit on 2026-09-07).
   if (state.rawStatus === "ROLLBACK_COMPLETE") {
+    const reason = state.statusReason;
     await deleteStack(clients);
-    return await getStackState(clients);
+    return {
+      status: "FAILED",
+      rawStatus: "ROLLBACK_COMPLETE",
+      statusReason: reason
+        ? `Setting up failed and was rolled back: ${reason}. The half-made stack has been cleared, so you can try again.`
+        : "Setting up failed and was rolled back. The half-made stack has been cleared, so you can try again.",
+    };
   }
 
   const bucket = evidenceBucketName(input.accountId);
