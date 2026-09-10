@@ -102,12 +102,12 @@ from a grep that only looked at `lambda:` lines, and that cost a second failed c
 | `AWS::S3::BucketPolicy` | `s3:DeleteBucketPolicy` | ✗ — it has `DeleteBucket`, a different action |
 | `AWS::DynamoDB::Table` | `dynamodb:DescribeTable` (polled to confirm) | ✗ — it has `DeleteTable`, not the poll |
 
-**STATUS 2026-09-10: fixed, awaiting merge — https://github.com/leonct74/agentspoppy/pull/1.**
-`lambda:RemovePermission` had already landed on `main` (the public-source mirror is stale, which is
-why an earlier check here read "none of the three"); that PR adds the other two plus the tests that
-pin them. **Certification stays blocked until it merges.** Nothing in this repo is waiting on
-anything else. When it merges: `npm run certify -- --yes`, remembering that certify needs the poppy
-deployed AND USED first.
+**✅ UNBLOCKED 2026-09-10 — https://github.com/leonct74/agentspoppy/pull/1 is MERGED.** All three
+actions are on `agentspoppy` `main`; verified by fetching main and reading the file, not by
+trusting the merge notification. **Certification can now run.** The one thing that gates it is the
+order at the top of this section: certify tears down what it certifies, so the poppy must be
+deployed AND USED first — start the audit, deploy the evidence stack, capture a snapshot so the
+bucket has objects in it — and only then `npm run certify -- --yes`.
 
 The stack ends in `DELETE_FAILED` and no certificate is written. This is not AuditPoppy-shaped:
 any poppy with a scheduled Lambda, a bucket policy or a table hits it. DESIGN §3 records why no
@@ -254,7 +254,9 @@ is the platform's. And read the whole policy, not the lines matching the service
 - Next, in dependency order — **the whole listing chain is gated on certification, which is gated
   on the platform** (`LISTING.md` has the order and the two one-way steps):
   1. ~~phase-0 teardown~~ — done 2026-09-10;
-  2. **merge https://github.com/leonct74/agentspoppy/pull/1** → `npm run certify -- --yes`;
+  2. ~~merge the platform fix~~ — merged 2026-09-10. **`npm run certify -- --yes` is next**, after
+     deploying and USING the poppy (see the certification section: certify tears down what it
+     certifies, so tearing down first leaves nothing to certify);
   3. ~~click-test the PACKED build~~ — **done 2026-09-10, by proof rather than by clicking**: the
      packed zip is byte-identical to what `install-dev-extension.mjs` lays out (same six files,
      matching hashes on manifest, backend bundle and frontend entry), so the build already
