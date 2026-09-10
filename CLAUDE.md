@@ -143,6 +143,49 @@ looked at `lambda:` lines, and that cost a cycle on its own.
 action. Clear the `DELETE_FAILED` stack from the poppy's own **Remove** tab — it runs as OUR
 session, which can delete what the host could not, and that contrast is itself the diagnostic.
 
+### ✅ CERTIFIED 2026-09-10 — and exactly half of it is proven
+
+```
+footprint before: 0 resource(s)      ← the problem
+stacks deleted:   AuditPoppyStack
+teardown hook:    ran
+residual sweep:   0 resource(s) still tagged
+✓ CERTIFIED
+```
+
+**What this run DOES prove, and it is the thing four days were spent on:** `stacks deleted:
+AuditPoppyStack`. The whole delete sequence — the Lambda permission, the bucket policy, the
+table's polled confirm, and the seven-call IAM role teardown — completed under the HOST's
+principal. The ten-action fix works end to end against a real account.
+
+**What it does NOT prove: that we leave nothing behind.** `footprintBefore` is
+`service.getResiduals()` → `findResiduals()`, a plain tag sweep over `tag:GetResources` with **no
+stack filtering** — its own comment says it "catches out-of-stack resources and partial-delete
+leftovers alike". Our stack's resources ARE tagged (stack tags propagate). So `0` before teardown,
+with a live stack standing, means **the tag index could not see them** — the Resource Groups
+Tagging API lag this file already warns about, ~minutes to an hour behind reality.
+
+`residualsAfter` comes from **that same sweep**, and `passed` is `residualsAfter.length === 0`. A
+sweep that answered 0 when the true answer was "a whole stack" answers 0 for any reason at all.
+**It had no discriminating power on this run, in either direction.** `teardown hook: ran` is not
+independent evidence either — `certify.ts` computes it from whether a hook is DECLARED, never
+whether it succeeded.
+
+The harness's own no-op warning does not catch this: it fires only when `footprintBefore` is empty
+**and** no stacks were deleted, so a deleted stack suppresses it even when the sweep was blind.
+
+**Before submission, certify once more with a WARM index.** Deploy, use, then leave it an hour and
+confirm `footprint before` is non-zero before running certify. Cheap — the deployment simply sits
+a little longer. Worth it because **the directory re-runs this same harness at submission**, and
+discovering a real leftover there is worse than discovering it here.
+
+**🚨 The harness gap is a PLATFORM change and it is MECHANISM-GUARDED.** `packages/broker/src/certify.ts`
+is a `SECURITY_MECHANISM.md` §4 enforcement point (the leaves-no-trace proof harness, I4's audit).
+Do not patch it casually: relay the warning, let the founder run `touch .claude/mechanism-approval`
+themselves, and walk the spec's §5 checklist in the same commit. The change worth proposing is
+narrow — treat "the sweep returned nothing before teardown while a stack existed" as a warning
+that the pass is UNVERIFIED, rather than as a clean bill.
+
 ## The three laws that bind every word and grant
 
 1. **Naming law (DESIGN §0):** never "SOC 2 compliant/certified" — only a licensed CPA firm
