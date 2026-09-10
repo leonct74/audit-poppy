@@ -155,36 +155,42 @@ still considers taken. That is not a bug in the poppy — wait a few minutes and
 action. Clear the `DELETE_FAILED` stack from the poppy's own **Remove** tab — it runs as OUR
 session, which can delete what the host could not, and that contrast is itself the diagnostic.
 
-### 🚨 The tag sweep runs on the OPERATOR key, which template v4 strips (2026-09-10)
+### ✅ The blind sweep is FIXED on the platform — both halves, merged 2026-09-10
 
-**Why the second certify run came back UNVERIFIED, and why the first certificate was hollow.**
-Not index lag — the sweep is *denied*. Traced in `agentspoppy` at `cd40ed8`:
+**What it was.** The second certify run came back UNVERIFIED, and it was not index lag — the
+sweep was *denied*. Two providers in the same run, two different credential planes:
 
-| Provider | Credentials | Same run's outcome |
+| Provider | Credentials it used | Same run's outcome |
 | --- | --- | --- |
 | `aws/cloudformation.ts` | `maintenanceCredentials()` | ✅ deleted the stack |
 | `aws/tagging.ts` (the tag sweep) | `operatorCredentials()` | ❌ auth-failed in **all 18+ regions** |
 | `aws/deletion.ts` (residual engine) | `operatorCredentials()` | untested, same exposure |
 
-`findResiduals` throws only when EVERY region fails AND one is an auth error — `regionsFor()` is
-the account's regions plus 18 standard ones, so this is systemic, not one disabled region. And
-`maintenance.ts`'s own header says **template v4 strips the operator user to assume-only**, listing
-the only two consumers that deliberately stay on that key: `sts.ts` hop 1 and `identity.ts`.
-`tagging.ts` and `deletion.ts` are not on that list — they were left behind.
+`maintenance.ts`'s own header says **template v4 strips the operator user to assume-only**, and
+lists the only two consumers that deliberately stay on that key: `sts.ts` hop 1 and `identity.ts`.
+`tagging.ts` and `deletion.ts` were not on that list — they had been left behind. The key still
+WORKS for AssumeRole (maintenance credentials derive from it, and CloudFormation succeeded) and is
+DENIED for `tag:GetResources`. That is exactly "assume-only".
 
-The operator key still WORKS for AssumeRole (maintenance credentials are derived from it and
-CloudFormation succeeded), and is DENIED for `tag:GetResources`. That is exactly "assume-only".
+It mattered well beyond us: the tag sweep IS the mechanism's I4 audit, so leaves-no-trace
+verification was blind on every v4 account, and the host's residual-deletion backstop sat in the
+same position. The harness's advice — "fix the account's read access" — pointed at the customer,
+where there was nothing to fix.
 
-**What it means beyond us:** the tag sweep IS the mechanism's I4 audit, so leaves-no-trace
-verification is blind on every v4 account, and the host's residual-deletion backstop is in the
-same position. **The harness's advice — "fix the account's read access" — is misleading: there is
-nothing on the customer's side to fix.**
+**Fixed in `agentspoppy`, and verified by reading `origin/main` rather than by trusting the merge:**
 
-**Both files are `SECURITY_MECHANISM.md` §4 enforcement points**, so this needs its own approval
-window: relay the banner, let the founder run `touch .claude/mechanism-approval` themselves, walk
-the §5 checklist in the same commit. Do not patch it from here.
+- `4bd2d0f` — `tagging.ts:59` and every client in `deletion.ts` now sign with
+  `maintenanceCredentials()`; **zero** `operatorCredentials()` remain in either file.
+- `cd40ed8` — `certify.ts` now treats a sweep it could not read as **UNVERIFIED** and **refuses to
+  write a certificate** for it: *"an unverified run is not a pass: nothing was proven either way."*
+  The failure mode that produced a hollow certificate can no longer produce one.
+- `996daa4` — spec updated: only the setup gateway's *write* side stays on the key.
 
-### ✅ CERTIFIED 2026-09-10 — and exactly half of it is proven
+Both files are `SECURITY_MECHANISM.md` §4 enforcement points, so this took its own approval window
+(the eleventh) in the platform repo. **Nothing here was patched from this repo, and nothing here
+needs to be.**
+
+### ⚠️ The 2026-09-10 certificate is SUPERSEDED — half of it was proven, and not the half that matters
 
 ```
 footprint before: 0 resource(s)      ← the problem
@@ -194,38 +200,37 @@ residual sweep:   0 resource(s) still tagged
 ✓ CERTIFIED
 ```
 
-**What this run DOES prove, and it is the thing four days were spent on:** `stacks deleted:
+**What that run DOES prove, and it is the thing four days were spent on:** `stacks deleted:
 AuditPoppyStack`. The whole delete sequence — the Lambda permission, the bucket policy, the
 table's polled confirm, and the seven-call IAM role teardown — completed under the HOST's
-principal. The ten-action fix works end to end against a real account.
+principal. The ten-action fix works end to end against a real account. That result stands.
 
 **What it does NOT prove: that we leave nothing behind.** `footprintBefore` is
 `service.getResiduals()` → `findResiduals()`, a plain tag sweep over `tag:GetResources` with **no
 stack filtering** — its own comment says it "catches out-of-stack resources and partial-delete
 leftovers alike". Our stack's resources ARE tagged (stack tags propagate). So `0` before teardown,
-with a live stack standing, means **the tag index could not see them** — the Resource Groups
-Tagging API lag this file already warns about, ~minutes to an hour behind reality.
+with a live stack standing, means **the sweep could not see them**. At the time that was read as
+tag-index lag; the very next run showed the sweep was *denied*, on credentials that had not changed
+between the two runs.
 
-`residualsAfter` comes from **that same sweep**, and `passed` is `residualsAfter.length === 0`. A
+`residualsAfter` came from **that same sweep**, and `passed` was `residualsAfter.length === 0`. A
 sweep that answered 0 when the true answer was "a whole stack" answers 0 for any reason at all.
-**It had no discriminating power on this run, in either direction.** `teardown hook: ran` is not
+**It had no discriminating power on that run, in either direction.** `teardown hook: ran` is not
 independent evidence either — `certify.ts` computes it from whether a hook is DECLARED, never
 whether it succeeded.
 
-The harness's own no-op warning does not catch this: it fires only when `footprintBefore` is empty
-**and** no stacks were deleted, so a deleted stack suppresses it even when the sweep was blind.
+So the certificate sitting on disk is not evidence. `leaves-no-trace.cert.json` is gitignored and
+the next passing run overwrites it; **the run that replaces it is the real one.**
 
-**Before submission, certify once more with a WARM index.** Deploy, use, then leave it an hour and
-confirm `footprint before` is non-zero before running certify. Cheap — the deployment simply sits
+**The re-run is now a genuine test, which it was not before.** With `cd40ed8` in place a blind
+sweep can no longer be mistaken for a clean bill — it reports UNVERIFIED and writes nothing. That
+makes `footprint before: <non-zero>` the discriminating result on the next run: it says the sweep
+can see, which is the only thing that makes `residual sweep: 0` afterwards mean anything.
+
+**Still let the index warm.** Deploy, use it, then leave it an hour before running certify, and
+check `footprint before` is non-zero before trusting the pass. Cheap — the deployment simply sits
 a little longer. Worth it because **the directory re-runs this same harness at submission**, and
 discovering a real leftover there is worse than discovering it here.
-
-**🚨 The harness gap is a PLATFORM change and it is MECHANISM-GUARDED.** `packages/broker/src/certify.ts`
-is a `SECURITY_MECHANISM.md` §4 enforcement point (the leaves-no-trace proof harness, I4's audit).
-Do not patch it casually: relay the warning, let the founder run `touch .claude/mechanism-approval`
-themselves, and walk the spec's §5 checklist in the same commit. The change worth proposing is
-narrow — treat "the sweep returned nothing before teardown while a stack existed" as a warning
-that the pass is UNVERIFIED, rather than as a clean bill.
 
 ## The three laws that bind every word and grant
 
@@ -368,10 +373,13 @@ that the pass is UNVERIFIED, rather than as a clean bill.
 - Next, in dependency order — **the whole listing chain is gated on certification, which is gated
   on the platform** (`LISTING.md` has the order and the two one-way steps):
   1. ~~phase-0 teardown~~ — done 2026-09-10;
-  2. ~~the platform fixes~~ — **both merged 2026-09-10** (agentspoppy #1 and #2, ten actions).
-     **`npm run certify -- --yes` is next**, after deploy → start the audit → evidence stack →
-     capture a snapshot. After a failed run the stack sits in `DELETE_FAILED`: clear it from the
-     poppy's own **Remove** tab, which runs as OUR session and can delete what the host could not;
+  2. ~~the platform fixes~~ — **all merged 2026-09-10**: the ten delete-time actions (agentspoppy
+     #1 and #2), then the blind-sweep pair (`4bd2d0f` credentials, `cd40ed8` harness). Nothing is
+     waiting on the platform any more. **`npm run certify -- --yes` is next**, after deploy → start
+     the audit → evidence stack → capture a snapshot → leave it an hour so the tag index warms, and
+     **check `footprint before` is non-zero** before trusting the pass. After a failed run the stack
+     sits in `DELETE_FAILED`: clear it from the poppy's own **Remove** tab, which runs as OUR
+     session and can delete what the host could not;
   3. ~~click-test the PACKED build~~ — **done 2026-09-10, by proof rather than by clicking**: the
      packed zip is byte-identical to what `install-dev-extension.mjs` lays out (same six files,
      matching hashes on manifest, backend bundle and frontend entry), so the build already
