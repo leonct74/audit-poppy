@@ -102,12 +102,24 @@ from a grep that only looked at `lambda:` lines, and that cost a second failed c
 | `AWS::S3::BucketPolicy` | `s3:DeleteBucketPolicy` | ✗ — it has `DeleteBucket`, a different action |
 | `AWS::DynamoDB::Table` | `dynamodb:DescribeTable` (polled to confirm) | ✗ — it has `DeleteTable`, not the poll |
 
-**✅ UNBLOCKED 2026-09-10 — https://github.com/leonct74/agentspoppy/pull/1 is MERGED.** All three
-actions are on `agentspoppy` `main`; verified by fetching main and reading the file, not by
-trusting the merge notification. **Certification can now run.** The one thing that gates it is the
-order at the top of this section: certify tears down what it certifies, so the poppy must be
-deployed AND USED first — start the audit, deploy the evidence stack, capture a snapshot so the
-bucket has objects in it — and only then `npm run certify -- --yes`.
+**It was FOUR actions, not three (2026-09-10).** PR #1 merged the first three; the very next
+certify run stranded on `iam:DeleteRolePolicy`, because the policy carried **no `iam:` action at
+all**. Deleting `AWS::IAM::Role` is a sequence — enumerate inline policies, delete each, detach
+managed ones, delete the role, read it back — and **any poppy that deploys compute deploys a
+role**, so this is close to every poppy in the directory.
+**https://github.com/leonct74/agentspoppy/pull/2 fixes it and is open.**
+
+**The lesson that outlives these four actions:** each one was found by burning a full
+deploy-use-certify cycle in a real account, one at a time, because the policy is maintained
+action-by-action against no model of what a stack can contain. `DELETE_TIME_ACTIONS` in
+`maintenance.test.ts` is now that model, and every fix has been pinned into it — but it is still
+hand-maintained. Deriving it from the resource types the manifest validator permits is the thing
+that ends the class; it is raised in both PRs and not yet done.
+
+**And a poppy cannot rescue itself from this.** AuditPoppy grants itself exactly these actions on
+exactly this role, and its teardown hook ran first — the run still failed under the HOST's
+principal, because `service.teardown()` issues its own `DeleteStack` after the hook returns. The
+host's credentials drive the deletion no matter how completely the poppy cleaned up.
 
 The stack ends in `DELETE_FAILED` and no certificate is written. This is not AuditPoppy-shaped:
 any poppy with a scheduled Lambda, a bucket policy or a table hits it. DESIGN §3 records why no
@@ -254,9 +266,11 @@ is the platform's. And read the whole policy, not the lines matching the service
 - Next, in dependency order — **the whole listing chain is gated on certification, which is gated
   on the platform** (`LISTING.md` has the order and the two one-way steps):
   1. ~~phase-0 teardown~~ — done 2026-09-10;
-  2. ~~merge the platform fix~~ — merged 2026-09-10. **`npm run certify -- --yes` is next**, after
-     deploying and USING the poppy (see the certification section: certify tears down what it
-     certifies, so tearing down first leaves nothing to certify);
+  2. **merge https://github.com/leonct74/agentspoppy/pull/2** (PR #1 merged; the next certify run
+     found a fourth gap, `iam:*` for role deletion) → then deploy, USE, and
+     `npm run certify -- --yes`. After a failed run the stack sits in `DELETE_FAILED`: clear it
+     from the poppy's own **Remove** screen, which runs as OUR session and can delete what the
+     host could not;
   3. ~~click-test the PACKED build~~ — **done 2026-09-10, by proof rather than by clicking**: the
      packed zip is byte-identical to what `install-dev-extension.mjs` lays out (same six files,
      matching hashes on manifest, backend bundle and frontend entry), so the build already
