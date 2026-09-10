@@ -8,7 +8,6 @@
 import { useEffect, useState } from "react";
 import { api, type CostsResponse, type StatusResponse } from "../lib/api";
 import { Banner, Chip, friendlyError, PendingButton, TypeToConfirm } from "../ui";
-import { RemovePanel } from "./RemovePanel";
 
 const SERVICE_LABEL: Record<string, string> = {
   config: "AWS Config — the change record",
@@ -16,7 +15,7 @@ const SERVICE_LABEL: Record<string, string> = {
   evidence: "Evidence bucket + monthly snapshot",
 };
 
-export function CostsView(props: { status: StatusResponse; refreshStatus: () => void; exportedThisSession?: boolean }) {
+export function CostsView(props: { status: StatusResponse; refreshStatus: () => void }) {
   const [costs, setCosts] = useState<CostsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
@@ -207,16 +206,12 @@ export function CostsView(props: { status: StatusResponse; refreshStatus: () => 
         screen totals only what AuditPoppy itself would enable.
       </p>
 
-      {/* Removal lives below the off switch: stopping the audit and removing the app are the two
-          ways out, and someone looking for either looks here. */}
-      <RemovePanel
-        accountId={props.status.account}
-        exportedThisSession={props.exportedThisSession === true}
-        // Unknown counts as running here: the panel uses it only to OFFER the gentler route
-        // ("stop first, it's reversible"), so the wrong guess costs a sentence, not a mistake.
-        auditRunning={checksOn !== false}
-        refreshStatus={props.refreshStatus}
-      />
+      {/* Removal used to live here, "below the off switch". It moved to its own tab because it
+          could not be found — see the note in App.tsx. This line stays so the person who ends up
+          on Costs looking for it is one click away rather than hunting. */}
+      <p className="small muted">
+        Removing AuditPoppy from this account — including its evidence — is on the <strong>Remove</strong> tab.
+      </p>
     </>
   );
 }

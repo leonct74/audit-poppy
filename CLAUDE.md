@@ -254,6 +254,12 @@ is the platform's. And read the whole policy, not the lines matching the service
   not read your account" into one falsy value, so a FAILED read rendered the reassuring
   *"$0 — nothing running"* banner. **An unknown must never default to the reassuring answer** —
   same shape as the certificate that proved tearing down nothing leaves nothing.
+- 🚨 **Removal could not be found — twice, by the person who designed its placement (2026-09-10).**
+  It sat at the bottom of Costs, "next to the off switch", which reads well and is wrong. Now its
+  own **Remove** tab before Feedback, pointer left on Costs. `tabs.test.ts` pins it — and pins the
+  thing the change nearly broke: **nothing enforced "Feedback is the LAST tab"**, a listing
+  requirement, so inserting a tab beside it was one character from unlistable. **A destructive
+  action nobody can find is not tucked away safely; the person hunting for it has already decided.**
 - ✅ **POLICIES SCREEN LIVE-VERIFIED (2026-09-08)** — the last item on the "never exercised live"
   list. Observed facts pre-fill correctly, typed answers persist across a tab switch, and they
   render into the policy body. **Every screen has now run against a real account.**

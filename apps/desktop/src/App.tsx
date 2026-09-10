@@ -1,5 +1,5 @@
 /**
- * AuditPoppy — SOC 2 audit-readiness in your own cloud. Five screens + the
+ * AuditPoppy — SOC 2 audit-readiness in your own cloud. Six screens + the
  * mandatory Feedback tab (last). Status is fetched from the sidecar on mount
  * and after every state-changing action, so a remount lands on live truth.
  */
@@ -12,10 +12,25 @@ import { EvidenceView } from "./views/EvidenceView";
 import { ExportView } from "./views/ExportView";
 import { FeedbackView } from "./views/FeedbackView";
 import { PoliciesView } from "./views/PoliciesView";
+import { RemovePanel } from "./views/RemovePanel";
 import { ReadinessView } from "./views/ReadinessView";
 
-const TABS = ["Readiness", "Evidence", "Policies", "Export", "Costs", "Feedback"] as const;
+// Remove is its own tab because it could not be found where it was. It lived at the bottom of
+// Costs — removal next to the off switch and the bill, which reads well in a design document —
+// and the founder, who specified that, looked for it and failed twice (2026-09-07, 2026-09-10).
+// A destructive action nobody can find is not "safely tucked away", it is missing: the person
+// hunting for it has already decided, and what they do instead is worse.
+// Feedback stays LAST (AGENTS.md §9a) — tabs.test.ts pins both facts.
+const TABS = ["Readiness", "Evidence", "Policies", "Export", "Costs", "Remove", "Feedback"] as const;
 type Tab = (typeof TABS)[number];
+
+/** Is the audit on? Unknown counts as ON — never read silence as "nothing is running". */
+function auditRunning(status: StatusResponse): boolean {
+  const readiness = status.readiness && "standards" in status.readiness ? status.readiness : null;
+  // The panel uses this only to OFFER the gentler route ("stop first, it is reversible"), so a
+  // wrong guess costs a sentence rather than a mistake — but guess in the safe direction anyway.
+  return readiness ? readiness.standards.some((s) => s.status !== "NOT_ENABLED") : true;
+}
 
 export default function App() {
   const [tab, setTab] = useState<Tab>("Readiness");
@@ -85,7 +100,15 @@ export default function App() {
           {tab === "Evidence" ? <EvidenceView status={status} refreshStatus={refreshStatus} /> : null}
           {tab === "Policies" ? <PoliciesView /> : null}
           {tab === "Export" ? <ExportView accountId={status.account} onExported={() => setExported(true)} /> : null}
-          {tab === "Costs" ? <CostsView status={status} refreshStatus={refreshStatus} exportedThisSession={exported} /> : null}
+          {tab === "Costs" ? <CostsView status={status} refreshStatus={refreshStatus} /> : null}
+          {tab === "Remove" ? (
+            <RemovePanel
+              accountId={status.account}
+              exportedThisSession={exported}
+              auditRunning={auditRunning(status)}
+              refreshStatus={refreshStatus}
+            />
+          ) : null}
         </>
       ) : null}
       {tab === "Feedback" ? <FeedbackView /> : null}

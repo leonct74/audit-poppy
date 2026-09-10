@@ -357,6 +357,23 @@ account ids, URLs and authorization ids as a backstop, applied to every value en
 and it is explicitly *not* a guarantee, because a bare IAM user name looks like any other word.
 Belt and braces, with the belt being "do not put raw errors in documents at all".
 
+### Removal gets its own tab (2026-09-10)
+
+§3 put removal at the bottom of the Costs screen — next to the off switch and the bill, on the
+reasoning that "someone looking for either looks here". That reads well and is wrong. The founder,
+who specified that placement, went looking for it and could not find it **twice**: once on
+2026-09-07 ("I don't see the tear down button") and again on 2026-09-10 ("remove from where????").
+
+A destructive action nobody can find is not tucked away safely. The person hunting for it has
+already decided; what they do instead — deleting things by hand in the console, or abandoning the
+poppy installed — is worse than the button. So **Remove** is now a tab of its own, immediately
+before the mandatory Feedback one, with a one-line pointer left on Costs for anyone who lands
+there looking.
+
+Both facts are pinned by `tabs.test.ts`, which also caught what the change nearly cost: nothing
+enforced "Feedback is the LAST tab" — a listing requirement, not a preference — and inserting a
+tab beside it was one character away from making the poppy unlistable with no test to notice.
+
 ## 6. Privacy & threat model (the honest paragraph, up front)
 
 Everything stays in the customer's account — but the *customer's own admins* can read the
