@@ -287,7 +287,7 @@ doing it to a reviewer. So: wait for the `certify.ts` fix and re-run. If the acc
 is UNVERIFIED forever, submit that plus this console verification and say plainly what was checked
 and why — never a CERTIFIED line we know could not have said anything else.
 
-### 🚨 THE THIRD HOLLOW CERTIFICATE — and this time the cause is isolated (2026-09-11)
+### ✅ THE THREE HOLLOW CERTIFICATES — cause isolated, and FIXED on the platform (2026-09-11)
 
 A run with everything right — fixed harness on `main`, preflight green, the stack deployed and
 used, a snapshot in the bucket, and **98 minutes** of index warming — still printed
@@ -321,9 +321,23 @@ that exact shape.** (Same family as `checksOn` and the hollow certificate it was
 Which branch was taken on this run is not provable from the output; the failing-open is provable
 from the source, and is worth fixing either way.
 
-**`certify.ts` is a `SECURITY_MECHANISM.md` §4 enforcement point — not ours to patch.** Reported to
-the agentspoppy session. The narrow change: a failed inventory read is itself grounds for
-UNVERIFIED, never for a pass.
+**FIXED in `agentspoppy` `0218789` (PR #6, twelfth approved window) — verified by reading
+`origin/main`, not by trusting the merge:**
+
+- **Fail closed.** A CloudFormation read that cannot be answered now sets `blindBefore` and pushes
+  UNVERIFIED carrying the error. Its comment names these three runs as the reason.
+- **First-hand proof, and this is the rule that does the work:**
+  `if (!blindBefore && footprintBefore.length === 0 && deletedStacks.length > 0)` → UNVERIFIED.
+  If teardown deleted a stack after the sweep saw nothing, then something stood and the sweep was
+  blind. **That needs no other read to be right**, which is exactly what the previous guard
+  depended on and did not get.
+- **Both instruments printed** — what CloudFormation saw beside what the tag count saw.
+- **`--wait-for-index <minutes>`** waits for the index with progress, before teardown. On an
+  account lagging past 90 minutes that is how a run becomes evidence instead of UNVERIFIED.
+
+**So use `npm run certify -- --yes --wait-for-index 120`.** The wait happens BEFORE teardown, so
+there is no need to sit on the deployment for an hour first — deploy, use it, run certify, let the
+harness do the waiting.
 
 **What settles leaves-no-trace meanwhile: the console, not the index.** CloudFormation, S3,
 DynamoDB, Lambda and IAM are a different system from `tag:GetResources`, and that is exactly what
@@ -538,9 +552,11 @@ discovering a real leftover there is worse than discovering it here.
      #1 and #2), then the blind-sweep pair (`4bd2d0f` credentials, `cd40ed8` harness). Nothing is
      waiting on the platform any more. **`npm run certify -- --yes` is next**, after deploy → start
      the audit → evidence stack → capture a snapshot → leave it an hour so the tag index warms, and
-     **check `footprint before` is non-zero** before trusting the pass. After a failed run the stack
-     sits in `DELETE_FAILED`: clear it from the poppy's own **Remove** tab, which runs as OUR
-     session and can delete what the host could not;
+     **run it as `npm run certify -- --yes --wait-for-index 120`** — the harness waits for the tag
+     index itself, before teardown, so the deployment need not sit for an hour first. A blind run
+     can no longer certify (`0218789`). After a failed run the stack sits in `DELETE_FAILED`: clear
+     it from the poppy's own **Remove** tab, which runs as OUR session and can delete what the host
+     could not;
   3. ~~click-test the PACKED build~~ — **done 2026-09-10, by proof rather than by clicking**: the
      packed zip is byte-identical to what `install-dev-extension.mjs` lays out (same six files,
      matching hashes on manifest, backend bundle and frontend entry), so the build already

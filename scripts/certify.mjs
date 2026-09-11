@@ -158,6 +158,10 @@ if (!passthrough.includes("--yes")) {
       "start the audit again first.",
       "",
       "Nothing has been torn down. Re-run with:  npm run certify -- --yes",
+      "",
+      "If the account's tag index lags (this one does, past 90 minutes), add --wait-for-index 120.",
+      "The harness then waits for the index BEFORE tearing down, which is what turns a run into",
+      "evidence rather than an UNVERIFIED report — a blind sweep can no longer certify.",
     ].join("\n"),
   );
   process.exit(1);
