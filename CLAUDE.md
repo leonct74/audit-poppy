@@ -277,12 +277,15 @@ account it is the only check with any discriminating power at all.
 The `leaves-no-trace.cert.json` on disk says CERTIFIED on evidence that could not have said
 anything else: still true, still the platform's to fix.
 
-**The submission question this raises, and it is the founder's to decide:** reviewers read the
+**DECIDED by the founder, 2026-09-11: wait for the `certify.ts` fix and re-run once.**
+
+**The question it settled:** reviewers read the
 self-run certify report. Ours says CERTIFIED on a sweep we know was blind. Submitting it as proof
 would be the exact move this repo keeps catching — *something that looks like proof, accepted
 without asking what would have to be true for it to be proof* — only this time we would be the ones
-doing it to a reviewer. Wait for the `certify.ts` fix and re-run; if the account's index lag means
-the honest outcome is UNVERIFIED forever, submit that plus this console verification, and say so.
+doing it to a reviewer. So: wait for the `certify.ts` fix and re-run. If the account's index lag means the honest outcome
+is UNVERIFIED forever, submit that plus this console verification and say plainly what was checked
+and why — never a CERTIFIED line we know could not have said anything else.
 
 ### 🚨 THE THIRD HOLLOW CERTIFICATE — and this time the cause is isolated (2026-09-11)
 
@@ -545,6 +548,9 @@ discovering a real leftover there is worse than discovering it here.
      `machine: "aws-only"` — the host refuses undeclared connections on the real spawn path and
      refused nothing. Only the DIRECTORY install path stays unproven, and it cannot run before a
      catalog entry exists, so it is the first real install after submission, not a task;
-  4. run the history check, then flip this repo public (fixes `bugsUrl` too);
+  4. ~~run the history check~~ — **clean, 2026-09-11**, over `git rev-list --all`: no 12-digit id
+     outside AWS's documented examples, no `--profile` reference, no account-bearing ARN. The
+     2026-09-04 rewrite holds. **Flipping this repo public is next and it is one-way** (it also
+     fixes the `bugsUrl` 404);
   5. `npm run pack` → GitHub Release → catalog entry → submit.
   Platform-side and independent of the above: the commerce product, and deploying the signup.
