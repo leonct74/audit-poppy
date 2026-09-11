@@ -85,6 +85,8 @@ export const api = {
   enable: () => host.invokeBackend<{ started: boolean }>({ method: "POST", path: "/enable" }),
   report: () => host.invokeBackend<GapReport>({ method: "GET", path: "/report" }),
   posture: () => host.invokeBackend<ObservedPosture>({ method: "GET", path: "/posture" }),
+  /** Pure read of the deploy state — never issues a step. What the Evidence screen displays. */
+  stack: () => host.invokeBackend<StackInfo>({ method: "GET", path: "/stack" }),
   deploy: () => host.invokeBackend<StackInfo>({ method: "POST", path: "/deploy" }),
   evidence: () => host.invokeBackend<{ bundles: EvidenceBundleSummary[] }>({ method: "GET", path: "/evidence" }),
   snapshot: () => host.invokeBackend<{ ok: boolean; key: string }>({ method: "POST", path: "/snapshot" }),

@@ -4,7 +4,7 @@
  * list the dated bundles, capture one on demand. Deploy state is derived from
  * CloudFormation live on every poll — leave and come back, it resumes.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { EvidenceBundleSummary } from "@auditpoppy/core";
 import { api, type StatusResponse, type StackInfo } from "../lib/api";
 import { Banner, Chip, friendlyError, PendingButton } from "../ui";
@@ -47,17 +47,50 @@ export function EvidenceView(props: { status: StatusResponse; refreshStatus: () 
     if (props.status.stack.status === "COMPLETE" || props.status.stack.status === "STORAGE_READY") loadBundles();
   }, [props.status.stack]);
 
-  // Advance/poll the two-phase deploy while it's mid-flight. Each /deploy call
-  // issues at most one step and reports the live state — safe to repeat.
+  // Poll the two-phase deploy while it's mid-flight — but READ and ADVANCE are separate calls,
+  // and the read is what the screen believes.
+  //
+  // They used to be one: every tick called /deploy, which both issued the next step and returned
+  // the state. So a tick that threw — and one reliably did, because the ~3 MB bundle upload takes
+  // longer than the 5s interval, and the next tick issued a SECOND UpdateStack against a stack
+  // already updating — left `stack` frozen at whatever it last was. AWS finished; the screen went
+  // on saying "Working…" until the app was restarted. That was the whole bug: the display's only
+  // source of truth was a call that could fail.
+  //
+  // Now the tick reads first, so the screen tracks AWS whatever happens to the advance, and the
+  // advance is issued only for the one phase that has a step to issue, never twice at once (the
+  // sidecar refuses overlap too — belt and braces, because the guard that matters is the one on
+  // the side that does the work).
+  const advancing = useRef(false);
   useEffect(() => {
     if (!inProgress) return;
-    const timer = setInterval(() => {
-      api
-        .deploy()
-        .then(setStack)
-        .catch((err: unknown) => setError(friendlyError(err)));
-    }, 5000);
-    return () => clearInterval(timer);
+    let stopped = false;
+    const tick = async (): Promise<void> => {
+      let live: StackInfo;
+      try {
+        live = await api.stack();
+      } catch (err: unknown) {
+        if (!stopped) setError(friendlyError(err));
+        return;
+      }
+      if (stopped) return;
+      setStack(live);
+      if (live.status !== "STORAGE_READY" || advancing.current) return;
+      advancing.current = true;
+      try {
+        const after = await api.deploy();
+        if (!stopped) setStack(after);
+      } catch (err: unknown) {
+        if (!stopped) setError(friendlyError(err));
+      } finally {
+        advancing.current = false;
+      }
+    };
+    const timer = setInterval(() => void tick(), 5000);
+    return () => {
+      stopped = true;
+      clearInterval(timer);
+    };
   }, [inProgress]);
 
   return (

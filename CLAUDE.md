@@ -179,40 +179,44 @@ still considers taken. That is not a bug in the poppy — wait a few minutes and
 action. Clear the `DELETE_FAILED` stack from the poppy's own **Remove** tab — it runs as OUR
 session, which can delete what the host could not, and that contrast is itself the diagnostic.
 
-### 🚨 OPEN: setup spun forever with the stack already finished (2026-09-10, unexplained)
+### ✅ FIXED: setup spun forever with the stack already finished (2026-09-10/11)
 
-**The observation, and it is solid.** CloudFormation reported `AuditPoppyStack UPDATE_COMPLETE` at
-23:28 local. The Evidence screen went on showing a setup-in-progress state after that, and only a
-full poppy restart cleared it. The founder called it an anomaly rather than accepting the restart
-as a fix, which is the right instinct and the reason this entry exists.
+**The symptom, twice.** CloudFormation reported `AuditPoppyStack UPDATE_COMPLETE`; the Evidence
+screen went on showing "Working…" and only a full poppy restart cleared it. The founder refused to
+accept the restart as a fix — *"I want this to work without the user realising he has to restart"* —
+which is the correct standard, and finding it took treating the second occurrence as a
+reproduction rather than a coincidence.
 
-**One real defect found on the way, and it is worth fixing on its own merits.** `POST /deploy`
-(`node-sidecar/src/index.ts`) has no guard against overlapping calls, and `EvidenceView.tsx`'s
-poll fires every 5s without waiting for the previous one to return. In the STORAGE_READY phase
-`advanceDeploy` re-uploads the whole snapshot Lambda zip (~3 MB) and re-issues `UpdateStack`, so
-a second tick lands while the first upload is still in flight: duplicate uploads, and a second
-`UpdateStack` against a stack already `UPDATE_IN_PROGRESS`, which throws. **Same shape as the
-rollback loop** — an unguarded poll issuing mutating work repeatedly — and that shape has now
-produced two bugs in this file, so treat any poll that mutates as suspect by default.
+**The cause: the display's only source of truth was a call that also mutated.** Every 5s tick
+called `POST /deploy`, which both issued the next step AND returned the state. Two consequences
+compounded:
 
-**What was RULED OUT, so nobody re-treads it:**
+1. An advance's first step uploads the ~3 MB snapshot bundle, which takes **longer than the 5s
+   interval**. The next tick re-read "storage ready" — the first advance had not reached its
+   `UpdateStack` yet — uploaded the bundle again and issued a **second `UpdateStack` against a
+   stack already updating**. That one fails.
+2. A tick that throws leaves `stack` untouched. So the screen kept the last state it happened to
+   have while AWS went on and finished without it. Nothing was broken in the account; the screen
+   simply stopped listening.
 
-- `/status` is not cached — it calls `getStackState()` live on every request (`index.ts:152`), so
-  a stale cached stack cannot be clobbering the freshly polled one.
-- `App.tsx`'s `refreshStatus` has `[]` deps, so `props.status.stack` is a stable reference and the
-  effect that copies it into local state is not firing on a timer.
-- A host call that never answers is not silent: `host.ts`'s bridge rejects after 60s, which shows
-  the error banner. An endless spinner with no banner is therefore NOT a hung call.
+**The fix, in two halves:**
 
-**So the defect above does not explain the observation, and it must not be written up as if it
-did.** A plausible mechanism found while looking for a bug is not the bug. What is still missing:
-whether an error banner was on screen during the spin (a failed poll sets one and leaves `stack`
-untouched), and the sidecar's log for the window — those distinguish "erroring invisibly" from
-something else entirely.
+- `GET /stack` is a **pure read**, and it is what the screen displays. The read happens first on
+  every tick, so the screen converges on what AWS says whatever the advance does.
+- `oneAtATime()` (`stack.ts`) serialises the advance: a call arriving while another is in flight
+  gets live state and issues nothing. Pinned by a test that holds an advance open, fires a second
+  call, and asserts exactly one advance ran. The client keeps its own guard too — the one that
+  matters is on the side that does the work.
 
-**Do not patch this before a certify run.** The build that gets certified has to be the build that
-is deployed; changing the deploy path first means tearing down and repeating the whole
-deploy → use → wait cycle. Fix it after certification, then re-verify setup end to end.
+**The general shape, which has now produced three bugs in this poppy:** *a poll that mutates.*
+The rollback loop, the duplicate upload, and this. Any polling loop that issues writes needs an
+overlap guard and a separate read, or it will eventually show a screen that has stopped tracking
+reality.
+
+**And the tell to remember:** the screen said "Working…" while the account was finished. Whenever
+a UI insists something is in progress that another system says is done, suspect the UI's *source*
+before its rendering — it is usually not listening any more, rather than listening and drawing
+wrongly.
 
 ### ✅ The blind sweep is FIXED on the platform — both halves, merged 2026-09-10
 

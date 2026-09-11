@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { advanceDeploy, getStackState } from "./stack";
+import { advanceDeploy, getStackState, oneAtATime, type StackState } from "./stack";
 import { awsError, fakeClients } from "./testUtil";
 
 const deployInput = {
@@ -140,5 +140,38 @@ describe("a stack left in a failed state by something OTHER than a create", () =
       "setup must never finish someone's removal for them");
     assert.equal(clients.fakes.cloudformation.sent("CreateStackCommand").length, 0,
       "and it cannot create over it either — AWS holds the name");
+  });
+});
+
+describe("the deploy advance runs one at a time (2026-09-11)", () => {
+  it("a poll arriving mid-advance reads state instead of issuing a second step", async () => {
+    let advances = 0;
+    let reads = 0;
+    let release!: () => void;
+    const slow = new Promise<void>((r) => (release = r));
+    const advance = oneAtATime(
+      async () => {
+        advances++;
+        await slow; // the bundle upload, which outlasts the 5s poll interval
+        return { status: "UPDATING" } as StackState;
+      },
+      async () => {
+        reads++;
+        return { status: "STORAGE_READY" } as StackState;
+      },
+    );
+
+    const first = advance();
+    const second = advance(); // the next poll tick, while the upload is still going
+    assert.equal((await second).status, "STORAGE_READY");
+    assert.equal(advances, 1, "the second call must not issue another upload or UpdateStack");
+    assert.equal(reads, 1);
+
+    release();
+    assert.equal((await first).status, "UPDATING");
+
+    // ...and once it has finished, the next call advances normally again.
+    await advance();
+    assert.equal(advances, 2);
   });
 });

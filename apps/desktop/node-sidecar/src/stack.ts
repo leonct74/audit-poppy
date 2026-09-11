@@ -167,6 +167,32 @@ export async function advanceDeploy(clients: Clients, input: DeployInput): Promi
   return state;
 }
 
+/**
+ * Run one advance at a time. A call arriving while another is in flight gets the live state and
+ * issues nothing.
+ *
+ * The Evidence screen polls every 5s; an advance's first step uploads the ~3 MB snapshot bundle,
+ * which takes longer than that. Without this, the next poll re-read "storage ready" — the first
+ * advance had not reached its UpdateStack yet — uploaded the bundle again and issued a second
+ * UpdateStack against a stack already updating. That one failed, and the failure was all the
+ * screen ever saw.
+ */
+export function oneAtATime(
+  advance: () => Promise<StackState>,
+  read: () => Promise<StackState>,
+): () => Promise<StackState> {
+  let inFlight = false;
+  return async () => {
+    if (inFlight) return await read();
+    inFlight = true;
+    try {
+      return await advance();
+    } finally {
+      inFlight = false;
+    }
+  };
+}
+
 export async function deleteStack(clients: Clients): Promise<void> {
   try {
     await clients.cloudformation.send(new DeleteStackCommand({ StackName: STACK_NAME }));

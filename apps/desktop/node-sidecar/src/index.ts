@@ -33,7 +33,7 @@ import { isLocalRequest } from "./localOnly";
 import { observePosture, estimateResourceCount } from "./posture";
 import { fetchUnitPrices } from "./pricing";
 import { buildLiveGapReport, fetchReadiness } from "./readiness";
-import { advanceDeploy, getStackState } from "./stack";
+import { advanceDeploy, getStackState, oneAtATime } from "./stack";
 import { recordScan, StateStore } from "./stateStore";
 import { disableChecksOnly, runTeardown } from "./teardown";
 import { evidenceBucketName, evidenceBucketRef } from "./template";
@@ -213,16 +213,32 @@ route("GET", "/posture", async () => {
   return observePosture(clients, account, env.region);
 });
 
-route("POST", "/deploy", async () => {
-  const account = await accountId();
-  return advanceDeploy(clients, {
-    accountId: account,
-    connectionId: env.bootstrap?.connectionId,
-    permissionsBoundaryArn: env.bootstrap?.permissionsBoundaryArn,
-    lambdaCodeKey,
-    lambdaZip: Buffer.from(lambdaZipBase64, "base64"),
-  });
-});
+// The deploy state as a PURE READ. The Evidence screen polls this for what it shows, so the
+// screen converges on what AWS says even when an advance fails — mixing the two is what let a
+// finished stack sit under a "Working…" line until the app was restarted (2026-09-10/11): the
+// advance threw, so nothing read the state, so the screen kept the last one it had.
+route("GET", "/stack", async () => getStackState(clients));
+
+// ONE advance at a time. The screen polls every 5s and an advance's first step — uploading the
+// ~3 MB snapshot bundle — takes longer than that, so without this guard the next poll re-reads
+// "storage ready", uploads the bundle again and issues a second UpdateStack against a stack that
+// is already updating. That one fails, and a failure was the only thing the screen ever saw.
+// A concurrent caller gets the live state instead: true, cheap, and issues nothing.
+const advanceOnce = oneAtATime(
+  async () => {
+    const account = await accountId();
+    return await advanceDeploy(clients, {
+      accountId: account,
+      connectionId: env.bootstrap?.connectionId,
+      permissionsBoundaryArn: env.bootstrap?.permissionsBoundaryArn,
+      lambdaCodeKey,
+      lambdaZip: Buffer.from(lambdaZipBase64, "base64"),
+    });
+  },
+  () => getStackState(clients),
+);
+
+route("POST", "/deploy", async () => advanceOnce());
 
 route("GET", "/evidence", async () => {
   const account = await accountId();
