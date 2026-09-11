@@ -253,6 +253,46 @@ Both files are `SECURITY_MECHANISM.md` §4 enforcement points, so this took its 
 (the eleventh) in the platform repo. **Nothing here was patched from this repo, and nothing here
 needs to be.**
 
+### ✅ THE CERTIFICATE OF RECORD (2026-09-11) — and what travels with it
+
+The run submitted with the listing is the one that reads:
+
+```
+footprint before: 0 resource(s)
+stacks deleted:   AuditPoppyStack
+teardown hook:    ran
+residual sweep:   0 resource(s) still tagged
+✓ CERTIFIED
+```
+
+**Why this one and not the later ones.** It tore down a deployment that had been used — the audit
+started, the evidence stack up, a snapshot written, so the bucket had objects in it and teardown
+had to do the part most likely to break. A later run the same day was a genuine no-op (`stacks
+deleted: none`) and its own ⚠️ says so; that one proves nothing.
+
+**How to tell which harness produced a given report:** the post-fix harness prints a
+`stacks standing: N (CloudFormation)` line. This report has none, so it predates `0218789`. That
+is not a defect in the run — it is why the run does not travel alone.
+
+**What travels with it: the console verification** (next section). Together they say the whole
+truth: a real teardown completed, the tag index could not see it, and the five services could.
+
+The submission paragraph, written so a reviewer gets both halves without having to ask:
+
+> **Leaves-no-trace verification.** The attached self-run certificate records a real teardown: a
+> deployed and used AuditPoppy installation, with evidence objects in its bucket, removed
+> completely (`stacks deleted: AuditPoppyStack`). Its `footprint before: 0` reflects the Resource
+> Groups Tagging index on that account, which lags by more than ninety minutes — the sweep could
+> not yet see resources that were demonstrably present. Removal was therefore verified directly
+> against each service instead: CloudFormation, S3, DynamoDB, Lambda and IAM were each checked
+> after teardown, and every resource AuditPoppy creates — the stack, the evidence bucket, the
+> assessments table, the snapshot function and its role — was gone. Nothing that pre-existed was
+> touched. The harness has since been corrected upstream (agentspoppy `0218789`) so that a sweep
+> which cannot see fails closed rather than certifying.
+
+**The rule this leaves behind:** when an instrument cannot see, do not keep re-running it and do
+not quietly accept its answer — read a different instrument and say which one told you what.
+
 ### ✅ LEAVES NO TRACE — VERIFIED BY CONSOLE, in the production account (2026-09-11)
 
 After the third hollow certificate, the question was settled with a **different instrument**. All
