@@ -53,22 +53,6 @@ if (!platform) {
 
 const passthrough = process.argv.slice(2).filter((a) => a !== "--skip-platform-check");
 const skipPlatformCheck = process.argv.includes("--skip-platform-check");
-if (!passthrough.includes("--yes")) {
-  console.error(
-    [
-      "certify: this performs a REAL teardown in the connected cloud account — it will disable",
-      "the services AuditPoppy enabled, delete its stack and empty its evidence bucket.",
-      "",
-      "It also needs the poppy currently DEPLOYED AND USED: it tears down itself, then sweeps",
-      "for anything left tagged. If you have already torn down, there is nothing to certify —",
-      "start the audit again first.",
-      "",
-      "Re-run with:  npm run certify -- --yes",
-    ].join("\n"),
-  );
-  process.exit(1);
-}
-
 /**
  * PREFLIGHT — the two mismatches that silently void a run, checked BEFORE the teardown.
  *
@@ -126,7 +110,10 @@ if (skipPlatformCheck) {
 const manifest = JSON.parse(readFileSync(join(extensionDir, "extension.json"), "utf8"));
 const installedDir = join(process.env.AGENTSPOPPY_HOME ?? join(homedir(), ".agentspoppy"), "extensions", manifest.id);
 const sha = (f) => createHash("sha256").update(readFileSync(f)).digest("hex");
-const builtBackend = join(extensionDir, manifest.backend.entry);
+// NOT `manifest.backend.entry` — that is the path INSIDE the installed/packed layout. The
+// build writes the bundle where the sidecar workspace builds it, and reaching for the
+// manifest path instead is the same trap that broke `certify` and `pack` before it.
+const builtBackend = join(extensionDir, "node-sidecar", "dist", "index.cjs");
 const installedBackend = join(installedDir, manifest.backend.entry);
 
 if (!existsSync(installedDir)) {
@@ -151,7 +138,30 @@ if (problems.length > 0) {
   process.exit(1);
 }
 
-console.log("preflight: harness up to date with origin/main, installed build matches this repo.");
+console.log(
+  [
+    "preflight OK",
+    `  harness:   ${platform} is up to date with origin/main`,
+    `  installed: ${installedDir} matches the build in this repo`,
+    "  RELAUNCH AgentsPoppy if you have not since the last install:local — that part cannot be checked from here.",
+  ].join("\n"),
+);
+
+if (!passthrough.includes("--yes")) {
+  console.error(
+    [
+      "certify: this performs a REAL teardown in the connected cloud account — it will disable",
+      "the services AuditPoppy enabled, delete its stack and empty its evidence bucket.",
+      "",
+      "It also needs the poppy currently DEPLOYED AND USED: it tears down itself, then sweeps",
+      "for anything left tagged. If you have already torn down, there is nothing to certify —",
+      "start the audit again first.",
+      "",
+      "Nothing has been torn down. Re-run with:  npm run certify -- --yes",
+    ].join("\n"),
+  );
+  process.exit(1);
+}
 
 console.log(`certifying ${extensionDir}\n  using the harness in ${platform}`);
 execFileSync("npm", ["run", "certify", "--", "--extension", extensionDir, ...passthrough], {
