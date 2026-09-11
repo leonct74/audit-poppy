@@ -608,5 +608,20 @@ discovering a real leftover there is worse than discovering it here.
      outside AWS's documented examples, no `--profile` reference, no account-bearing ARN. The
      2026-09-04 rewrite holds. **Flipping this repo public is next and it is one-way** (it also
      fixes the `bugsUrl` 404);
-  5. `npm run pack` → GitHub Release → catalog entry → submit.
+  5. ~~`npm run pack` → GitHub Release~~ — **v0.1.0 PUBLISHED 2026-09-11**, asset
+     `com.auditpoppy.desktop-0.1.0-any.zip` (3,129,673 bytes). GitHub's own computed digest is
+     `sha256:6640c050…fc27`, identical to the catalogue entry — so the bytes a user downloads are
+     provably the bytes the entry declares, confirmed by a third party rather than by us.
+     **The catalogue entry and the portal submission are what remain.**
+
+     **The package is NOT byte-reproducible across machines, and this was found by the check that
+     nearly got skipped.** A Linux build and a macOS build of the same commit differ in exactly one
+     file: `backend/index.cjs`. Everything else — the manifest, both Vite assets including their
+     content-hashed filenames, the icon, `index.html` — is identical, and the embedded Lambda's
+     content key matched exactly (`snapshot-d3310fb7e88239c3.zip`), so the generated bundle is
+     ruled out. It is esbuild bundling the sidecar differently per platform. **Harmless for the
+     release** (the published build is the authoritative one) but it means nobody can rebuild from
+     source and confirm the published hash — and for a poppy whose pitch is auditability, the sha
+     IS the trust story. Worth fixing; not worth blocking on. Note that the earlier
+     "same sha256 across two runs" check only ever proved SAME-MACHINE determinism.
   Platform-side and independent of the above: the commerce product, and deploying the signup.
