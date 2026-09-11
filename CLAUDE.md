@@ -253,6 +253,37 @@ Both files are `SECURITY_MECHANISM.md` §4 enforcement points, so this took its 
 (the eleventh) in the platform repo. **Nothing here was patched from this repo, and nothing here
 needs to be.**
 
+### ✅ LEAVES NO TRACE — VERIFIED BY CONSOLE, in the production account (2026-09-11)
+
+After the third hollow certificate, the question was settled with a **different instrument**. All
+five resource types checked directly, in the region the poppy deployed into (`eu-west-1`) plus
+global IAM, in the SAME account the certify run named — the sandbox was explicitly ruled out,
+because this file records getting that wrong twice:
+
+| Where | Looking for | Found |
+| --- | --- | --- |
+| CloudFormation | `AuditPoppyStack` | gone (only AgentsPoppy's own stack remains, as it should) |
+| S3 | `auditpoppy-evidence-*` | gone |
+| DynamoDB | `AuditPoppyStack-assessments` | gone |
+| Lambda | `AuditPoppyStack-snapshot` | gone |
+| IAM | `AuditPoppyStack-snapshot-role` | gone |
+
+**Why this counts when three certificates did not:** CloudFormation, S3, DynamoDB, Lambda and IAM
+are each their own source of truth. `tag:GetResources` is one index over all of them, and it is the
+thing that was blind. Asking five services directly is not a weaker check than the sweep — on this
+account it is the only check with any discriminating power at all.
+
+**So the product claim stands, and the harness claim does not.** AuditPoppy leaves no trace: shown.
+The `leaves-no-trace.cert.json` on disk says CERTIFIED on evidence that could not have said
+anything else: still true, still the platform's to fix.
+
+**The submission question this raises, and it is the founder's to decide:** reviewers read the
+self-run certify report. Ours says CERTIFIED on a sweep we know was blind. Submitting it as proof
+would be the exact move this repo keeps catching — *something that looks like proof, accepted
+without asking what would have to be true for it to be proof* — only this time we would be the ones
+doing it to a reviewer. Wait for the `certify.ts` fix and re-run; if the account's index lag means
+the honest outcome is UNVERIFIED forever, submit that plus this console verification, and say so.
+
 ### 🚨 THE THIRD HOLLOW CERTIFICATE — and this time the cause is isolated (2026-09-11)
 
 A run with everything right — fixed harness on `main`, preflight green, the stack deployed and
