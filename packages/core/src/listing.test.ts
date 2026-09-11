@@ -40,3 +40,14 @@ describe("the listing obeys the three laws", () => {
     expect(LISTING.repo).toMatch(/^https:\/\/github\.com\/[\w.-]+\/[\w.-]+$/);
   });
 });
+
+describe("the catalog gate", () => {
+  it("names a minHost, because an older host strands this poppy's stack on removal", () => {
+    // Not cosmetic: on ≤0.3.19 the host's maintenance session cannot finish deleting the stack,
+    // so removing from AgentsPoppy's own screen leaves the bucket, table, role and function
+    // billing. The gate converts that into an update prompt. Raise it, never drop it.
+    expect(LISTING.minHost).toMatch(/^\d+\.\d+\.\d+$/);
+    const [major, minor, patch] = LISTING.minHost.split(".").map(Number);
+    expect(major * 1_000_000 + minor * 1_000 + patch).toBeGreaterThanOrEqual(0 * 1_000_000 + 3 * 1_000 + 20);
+  });
+});

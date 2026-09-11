@@ -24,6 +24,22 @@ export const LISTING = {
   name: "AuditPoppy",
   /** The tagline is where the explicitness lives. */
   tagline: "SOC 2 audit-readiness in your own cloud",
+  /**
+   * The catalog gate (the entry's `minHost`, not the manifest's — it lives on the catalog entry,
+   * `directory.ts:70`). 0.3.20 is the first AgentsPoppy whose host-maintenance session can finish
+   * deleting this poppy's stack.
+   *
+   * 0.3.19 (the shipped build, tagged 2026-09-04) predates every teardown fix: the ten delete-time
+   * actions, and the tag sweep and residual-cleanup move onto the maintenance session. On it,
+   * removing AuditPoppy from AgentsPoppy's OWN screen strands the stack in DELETE_FAILED and
+   * leaves the bucket, table, role and function behind, billing — the one outcome a poppy whose
+   * promise is "leaves no trace" cannot ship with. The gate turns that into "needs 0.3.20 or
+   * newer, update AgentsPoppy first".
+   *
+   * Removal from AuditPoppy's own Remove tab was never affected: that runs as the poppy's own
+   * session, which holds the actions. The gate is about the host's path, not ours.
+   */
+  minHost: "0.3.20",
   publisher: "Olly Digital",
   website: "https://agentspoppy.com/poppies/auditpoppy",
   repo: "https://github.com/leonct74/audit-poppy",

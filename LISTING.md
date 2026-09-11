@@ -33,9 +33,26 @@ them are one-way.
    thing that matters.
 
 5. **Fill the catalog entry** from `listing.ts` and the release: `id, name, tagline, description,
-   publisher, website, repo, version`, and `packages: { "any": { url, sha256 } }`. The platform
-   key is `any` because this poppy's backend is a `node22` bundle rather than a native binary —
-   one package, every machine.
+   publisher, website, repo, version, minHost`, and `packages: { "any": { url, sha256 } }`. The
+   platform key is `any` because this poppy's backend is a `node22` bundle rather than a native
+   binary — one package, every machine.
+
+   **`minHost` is not optional and it is `LISTING.minHost` (0.3.20).** It lives on the catalog
+   entry, not in `extension.json` — the host reads it there (`directory.ts:70`) and refuses the
+   install with *"needs AgentsPoppy 0.3.20 or newer — update AgentsPoppy first"*.
+
+   Why that exact version: the shipped host is **0.3.19**, tagged 2026-09-04, and it predates every
+   teardown fix — the ten delete-time actions, and the tag sweep and residual cleanup moving onto
+   the maintenance session. On 0.3.19, a customer who removes AuditPoppy from **AgentsPoppy's own
+   screen** strands the stack in `DELETE_FAILED` and is left with the evidence bucket, the table,
+   the role and the function, still billing. For a poppy whose whole promise is that it leaves no
+   trace, that is the one shipping outcome worth blocking an install over. (Removal from
+   AuditPoppy's own **Remove** tab was never affected — it runs as the poppy's own session, which
+   holds the actions. The gate is about the host's path, not ours.)
+
+   So the listing depends on an AgentsPoppy **0.3.20** release, which is the founder's to cut
+   (macOS notarization needs his machine). The gate is worth setting either way: without the
+   release it stops the bad install, and with it the gate simply passes.
 
 6. **Submit through the developer portal.**
 

@@ -433,6 +433,27 @@ discovering a real leftover there is worse than discovering it here.
   decided tagline fails this repo's own `checkCopy`. Settled to "in your own cloud"; the founder's
   search rationale survives because proper nouns stay, so "AWS Config" and "AWS Security Hub" are
   still in the description. Reversible in one line if the founder prefers the original.
+- 🚨 **The listing needs an AgentsPoppy 0.3.20 release, and the reason is a customer-facing one
+  (answered by the agentspoppy session, 2026-09-11).** The shipped host is **0.3.19**, tagged
+  2026-09-04, which predates every teardown fix — the ten delete-time actions and the sweep/cleanup
+  move onto the maintenance session. `MAINTENANCE_POLICY_STATEMENTS` lives in **broker code**, not
+  the customer's account template ("they exist only as a session bound"), and AgentsPoppy's own
+  removal path uses that session (`http.ts:354` → `service.teardown`). So on 0.3.19, **a customer
+  who removes AuditPoppy from AgentsPoppy's own screen strands the stack** and is left with the
+  evidence bucket, table, role and function, billing. Not AuditPoppy-specific: any poppy with a
+  Lambda permission, an execution role, a bucket policy or a table hits the same wall, and on a
+  v4 account the residual sweep reads nothing and the cleanup does nothing.
+  **Submission is NOT blocked** — the platform re-run (MARKETPLACE M7) is not built yet, so the
+  developer self-runs certify from the agentspoppy repo and reviewers read that report. Ours runs
+  from `main`, i.e. fixed code, which is exactly what the preflight now enforces.
+  **Ours to do, and done:** `LISTING.minHost = "0.3.20"`, test-pinned, documented in `LISTING.md`
+  step 5. It lives on the CATALOG ENTRY (`directory.ts:70`), not in `extension.json`, so it is
+  filled in at submission and is easy to forget — hence the pin. Without the release it stops the
+  bad install with "update AgentsPoppy first"; with it, the gate simply passes.
+  **Not ours:** cutting 0.3.20 from `main` (13 commits past 0.3.19; macOS notarization needs the
+  founder's machine), and the release note telling users on the new template who removed a poppy
+  since late August to check for leftovers, because the shipped build could neither see nor clean
+  them.
 - Next, in dependency order — **the whole listing chain is gated on certification, which is gated
   on the platform** (`LISTING.md` has the order and the two one-way steps):
   1. ~~phase-0 teardown~~ — done 2026-09-10;
