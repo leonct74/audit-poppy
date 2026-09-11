@@ -88,6 +88,30 @@ is the part of teardown most likely to break. The certificate it writes
 (`leaves-no-trace.cert.json`) is gitignored: it records the AWS account the run happened in, and
 this repo goes public.
 
+### ✅ Certify now REFUSES to start on a mismatch (preflight, 2026-09-11)
+
+Two things silently void a run, and neither shows up in the harness's output — a voided run looks
+exactly like a good one. Both have now cost a full deploy-use-wait cycle in a real account, so
+`scripts/certify.mjs` checks them **before** the teardown and exits rather than warning:
+
+1. **A stale agentspoppy checkout.** The harness runs from that repo, so an out-of-date checkout
+   certifies with out-of-date code. On 09-11 the checkout was one commit short of `4bd2d0f`: the
+   tag sweep was still signing with the stripped operator key, was denied in every region, read
+   `footprint before: 0` with a whole stack standing — **and certified anyway**. The fix had been
+   on `main` for a day; the instruction to pull it existed only in a chat message.
+2. **An installed build that is not this one.** What gets certified is what the app is RUNNING.
+   Skip `npm run install:local`, or skip the relaunch, and the certificate describes a different
+   build than the code here. Checked by hashing the built backend bundle against the installed one.
+
+An unreachable git remote **refuses** rather than assuming the best — an unknown must never default
+to the reassuring answer. `--skip-platform-check` is the deliberate way past, deliberate because it
+has to be typed.
+
+**Why this had to be code and not a line in this file:** nobody working on this repo from a chat
+session can see the founder's disk. The only thing that can verify the checkout at the moment it
+matters is something running on that machine. Same lesson as phase 0's imaginary scheduled
+teardown — *a safety net written down is not a safety net.*
+
 **✅ Certification was BLOCKED on the platform and is not any more — ten actions across
 `agentspoppy` PRs #1 and #2, both merged 2026-09-10.** Verified on `main` by reading
 `packages/broker/src/aws/maintenance.ts` there, not by trusting a merge notification.

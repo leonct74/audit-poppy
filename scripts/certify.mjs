@@ -17,7 +17,8 @@
  * nothing to sweep. Certify first, then rebuild for real.
  */
 import { execFileSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -50,7 +51,8 @@ if (!platform) {
   process.exit(1);
 }
 
-const passthrough = process.argv.slice(2);
+const passthrough = process.argv.slice(2).filter((a) => a !== "--skip-platform-check");
+const skipPlatformCheck = process.argv.includes("--skip-platform-check");
 if (!passthrough.includes("--yes")) {
   console.error(
     [
@@ -66,6 +68,90 @@ if (!passthrough.includes("--yes")) {
   );
   process.exit(1);
 }
+
+/**
+ * PREFLIGHT — the two mismatches that silently void a run, checked BEFORE the teardown.
+ *
+ * Both have now cost a full deploy-use-wait cycle in a real account, and neither was visible in
+ * the harness's output: a voided run looks exactly like a good one.
+ *
+ * 1. A STALE PLATFORM REPO (2026-09-11). The harness runs from the agentspoppy checkout, so an
+ *    out-of-date checkout certifies with out-of-date code. The tag sweep was still signing with
+ *    the stripped operator key, so it was denied in every region, so `footprint before` read 0
+ *    with a whole stack standing — and the run certified anyway. The fix had been on `main` for
+ *    a day. The instruction to pull it lived only in a chat message.
+ *
+ * 2. AN INSTALLED BUILD THAT IS NOT THIS ONE. What gets certified is what the app is running,
+ *    not what this repo has built. Skip `npm run install:local`, or skip the relaunch, and the
+ *    certificate describes a different build than the code sitting here.
+ *
+ * An unreachable remote REFUSES rather than assuming the best — this repo's own law is that an
+ * unknown must never default to the reassuring answer. `--skip-platform-check` is the deliberate
+ * way past, and it is deliberate precisely because it has to be typed.
+ */
+function git(args) {
+  return execFileSync("git", ["-C", platform, ...args], { encoding: "utf8", timeout: 60_000 }).trim();
+}
+
+const problems = [];
+
+if (skipPlatformCheck) {
+  console.warn("certify: --skip-platform-check — the harness version is NOT verified for this run.");
+} else {
+  try {
+    git(["fetch", "origin", "main", "--quiet"]);
+    const behind = Number(git(["rev-list", "--count", "HEAD..origin/main"]));
+    if (behind > 0) {
+      problems.push(
+        `the agentspoppy checkout is ${behind} commit(s) behind origin/main, so the harness — and the\n` +
+          `  tag sweep it depends on — would run stale code:\n\n` +
+          `    git -C ${platform} pull\n`,
+      );
+    }
+    if (git(["status", "--porcelain"]) !== "") {
+      console.warn(
+        `certify: ${platform} has uncommitted changes — the harness that runs is what is on disk\n` +
+          "  there, not what origin/main says. Continuing; the certificate describes that working tree.",
+      );
+    }
+  } catch (err) {
+    problems.push(
+      `the agentspoppy checkout could not be checked against origin/main (${String(err.message).split("\n")[0]}).\n` +
+        "  That is an unknown, not a pass: a stale harness certifies with stale code. Fix the checkout, or\n" +
+        "  if you have decided the version is right, re-run with --skip-platform-check.",
+    );
+  }
+}
+
+const manifest = JSON.parse(readFileSync(join(extensionDir, "extension.json"), "utf8"));
+const installedDir = join(process.env.AGENTSPOPPY_HOME ?? join(homedir(), ".agentspoppy"), "extensions", manifest.id);
+const sha = (f) => createHash("sha256").update(readFileSync(f)).digest("hex");
+const builtBackend = join(extensionDir, manifest.backend.entry);
+const installedBackend = join(installedDir, manifest.backend.entry);
+
+if (!existsSync(installedDir)) {
+  problems.push(
+    `nothing is installed at ${installedDir}, so the app has no build of this poppy to be running:\n\n` +
+      "    npm run install:local     # then RELAUNCH AgentsPoppy\n",
+  );
+} else if (!existsSync(builtBackend)) {
+  problems.push(`this repo has no built backend at ${builtBackend} — run \`npm run build\` first.`);
+} else if (!existsSync(installedBackend) || sha(builtBackend) !== sha(installedBackend)) {
+  problems.push(
+    "the INSTALLED build is not the one this repo has built, so the certificate would describe a\n" +
+      "  different build than the code here:\n\n" +
+      "    npm run install:local     # then RELAUNCH AgentsPoppy\n",
+  );
+}
+
+if (problems.length > 0) {
+  console.error(
+    ["certify: not starting — this run would be voided before it began.", "", ...problems.map((p) => `- ${p}`)].join("\n"),
+  );
+  process.exit(1);
+}
+
+console.log("preflight: harness up to date with origin/main, installed build matches this repo.");
 
 console.log(`certifying ${extensionDir}\n  using the harness in ${platform}`);
 execFileSync("npm", ["run", "certify", "--", "--extension", extensionDir, ...passthrough], {
