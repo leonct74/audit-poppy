@@ -1,0 +1,26 @@
+{
+  "name": "auditpoppy",
+  "version": "0.0.0",
+  "license": "PolyForm-Shield-1.0.0",
+  "private": true,
+  "description": "SOC 2 audit-readiness for your own AWS account, from inside your own AWS account.",
+  "workspaces": [
+    "packages/core",
+    "apps/desktop",
+    "apps/desktop/node-sidecar",
+    "lambdas"
+  ],
+  "scripts": {
+    "typecheck": "tsc -b packages/core lambdas && npm run typecheck -w @auditpoppy/desktop-sidecar && npm run typecheck -w @auditpoppy/desktop",
+    "test": "npm run test -w @auditpoppy/core && npm run test -w @auditpoppy/desktop-sidecar && npm run test -w @auditpoppy/desktop",
+    "gen:manifest": "npm run gen:manifest -w @auditpoppy/desktop-sidecar",
+    "build": "npm run build -w @auditpoppy/desktop && npm run build -w @auditpoppy/desktop-sidecar",
+    "preinstall:local": "npm run build",
+    "install:local": "node scripts/install-local.mjs",
+    "certify": "node scripts/certify.mjs",
+    "pack": "npm run build && node scripts/pack.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
