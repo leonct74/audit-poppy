@@ -56,6 +56,41 @@ them are one-way.
 
 6. **Submit through the developer portal.**
 
+## The catalogue entry IS the page — and its SEO
+
+There is no hand-written page for AuditPoppy on agentspoppy.com, and there should not be.
+`/poppies/[slug]` is a template rendered from the catalogue record in the commerce database
+(`src/app/poppies/[slug]/page.tsx` in `agentspoppy-web`, `revalidate: 300`). So everything a
+search engine sees comes from the record:
+
+| Rendered as | Comes from |
+| --- | --- |
+| `<title>` | `"AuditPoppy — " + tagline` |
+| meta description, OpenGraph, Twitter card | `description` |
+| `SoftwareApplication` JSON-LD (name, description, version, author, offers) | the record + live price |
+| "Nothing leaves your cloud" panel | `dataStaysInYourCloud: true` |
+| "What you get", free and paid columns | `features[]` |
+| Pricing rows | the commerce database, live — never a number in this repo |
+| "Source code · Public by requirement" | `repo` |
+
+`CATALOG` in `packages/core/src/listing.ts` holds all of it, test-pinned by `listing.test.ts`
+against the same three laws as the rest of the listing. **Fill the record from `CATALOG`, do not
+retype it** — a value typed into an admin form is a value no test can reach.
+
+Two things worth knowing before writing the copy differently:
+
+- **The first sentence of `description` is the meta description** most of the time, because
+  search engines truncate around 155–160 characters. It currently leads with getting ready for an
+  audit without shipping your infrastructure's secrets to anyone, which is both the search intent
+  and the wedge.
+- **"Cheapest" is not written anywhere, deliberately.** It is an unverifiable superlative about
+  other people's pricing, and this product's whole credibility rests on not overclaiming. The
+  argument is made instead, and it is stronger: every capability is free for individuals and for
+  companies under ten people, nothing is withheld from a free user, the paid tier removes a
+  watermark rather than unlocking a feature, and the recurring cost is your own provider's bill
+  rather than a per-seat subscription — which the Costs screen shows you *before* you enable
+  anything.
+
 ## Already done, and why it does not need doing again
 
 The runbook's "click-test the packed build in the real host" is **satisfied** (checked

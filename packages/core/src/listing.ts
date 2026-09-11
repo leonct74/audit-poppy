@@ -74,3 +74,78 @@ export const LISTING = {
   /** Repeated verbatim from the naming law so the listing cannot drift from the product. */
   disclaimer: APPROVED.policyDisclaimer,
 } as const;
+
+/**
+ * The CATALOGUE ENTRY — the fields agentspoppy.com's `/poppies/[slug]` page renders.
+ *
+ * There is no hand-written page for AuditPoppy and there should not be: that route is a template
+ * driven entirely by the catalogue record. `tagline` becomes the HTML `<title>` (as
+ * "AuditPoppy — <tagline>"), `description` becomes the meta description, the OpenGraph card and
+ * the `SoftwareApplication` JSON-LD, and `dataStaysInYourCloud` is what renders the
+ * "Nothing leaves your cloud" panel. So the SEO of that page IS this object.
+ *
+ * Everything here obeys the same three laws as the rest of the listing, and the test below walks
+ * every string: no "compliant"/"certified" (only a CPA firm attests), "cloud" rather than the
+ * provider's name outside proper nouns, and NO PRICE — the amount lives in the commerce database
+ * and the page renders it live, so the founder can change it without touching a release.
+ */
+export const CATALOG = {
+  slug: "auditpoppy",
+  categoryLabel: "Security & compliance",
+  platforms: ["any"] as const,
+  ageRating: "everyone",
+  /** Renders the green "Nothing leaves your cloud" panel — the whole wedge, in one boolean. */
+  dataStaysInYourCloud: true,
+  supportUrl: "https://github.com/leonct74/audit-poppy/issues",
+  securityContact: "https://github.com/leonct74/audit-poppy/security/advisories/new",
+  /**
+   * "What you get", split by tier. Mirrors DESIGN §8: everything below is free for an individual
+   * and for a company under ten people; above that the export loses its watermark under a licence.
+   * The watermark is the ONLY difference — no feature is withheld, because a compliance tool that
+   * hides your own evidence behind a paywall has already lost the argument it is making.
+   */
+  features: [
+    {
+      tier: "free",
+      title: "Gap report against the Trust Services Criteria",
+      description:
+        "Turns on the checking services your cloud already offers (AWS Config, AWS Security Hub), reads every finding, and maps it to the criteria an auditor asks about — naming the control, the affected resources and what to do.",
+    },
+    {
+      tier: "free",
+      title: "Evidence collected every month, automatically",
+      description:
+        "A scheduled function writes a dated, immutable bundle into a locked-down bucket in your account. An auditor needs proof your controls operated across the period, not a screenshot from today.",
+    },
+    {
+      tier: "free",
+      title: "Policy pack, pre-filled from what is actually there",
+      description:
+        "Access control, change management, incident response, vendor management, data retention — pre-filled from your observed posture, with your own answers kept visibly separate from the facts it read.",
+    },
+    {
+      tier: "free",
+      title: "The auditor package, in one click",
+      description:
+        "Gap report, policies, evidence index and your notes, as a PDF and as JSON. On the personal tier the PDF carries a watermark.",
+    },
+    {
+      tier: "free",
+      title: "What it will cost, before you switch anything on",
+      description:
+        "A live-priced forecast for your own account, read from your provider's price list — because the continuous change recording that an audit requires is the real cost, and you should see it first.",
+    },
+    {
+      tier: "free",
+      title: "Removes itself completely",
+      description:
+        "One button takes away everything it created — the stack, the bucket, the schedule, the roles — and leaves what was already there untouched. Verified against a real account, not asserted.",
+    },
+    {
+      tier: "paid",
+      title: "Clean exports for companies of ten or more",
+      description:
+        "The same package without the watermark, under a licence tied to the cloud account being audited rather than to whoever paid — so it survives a reinstall or a new machine. Free for companies under ten people.",
+    },
+  ],
+} as const;

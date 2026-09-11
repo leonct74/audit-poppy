@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LISTING } from "./listing";
+import { LISTING, CATALOG} from "./listing";
 import { checkCopy } from "./naming";
 
 /** Every string a buyer reads, flattened. */
@@ -49,5 +49,28 @@ describe("the catalog gate", () => {
     expect(LISTING.minHost).toMatch(/^\d+\.\d+\.\d+$/);
     const [major, minor, patch] = LISTING.minHost.split(".").map(Number);
     expect(major * 1_000_000 + minor * 1_000 + patch).toBeGreaterThanOrEqual(0 * 1_000_000 + 3 * 1_000 + 20);
+  });
+});
+
+describe("the catalogue entry (what agentspoppy.com/poppies/auditpoppy renders)", () => {
+  const strings = [
+    CATALOG.categoryLabel,
+    ...CATALOG.features.flatMap((f) => [f.title, f.description]),
+  ];
+
+  it("obeys the same three laws as the rest of the listing", () => {
+    for (const text of strings) expect(checkCopy(text)).toEqual([]);
+  });
+
+  it("declares that nothing leaves the customer's cloud — the claim the page is built around", () => {
+    expect(CATALOG.dataStaysInYourCloud).toBe(true);
+  });
+
+  it("offers every capability free and charges only for the unwatermarked export", () => {
+    // A compliance tool that withholds your own evidence behind a paywall has lost its argument.
+    const paid = CATALOG.features.filter((f) => f.tier === "paid");
+    expect(paid).toHaveLength(1);
+    expect(paid[0]?.title.toLowerCase()).toContain("export");
+    expect(CATALOG.features.filter((f) => f.tier === "free").length).toBeGreaterThan(4);
   });
 });
