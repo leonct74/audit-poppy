@@ -253,6 +253,49 @@ Both files are `SECURITY_MECHANISM.md` §4 enforcement points, so this took its 
 (the eleventh) in the platform repo. **Nothing here was patched from this repo, and nothing here
 needs to be.**
 
+### 🚨 THE THIRD HOLLOW CERTIFICATE — and this time the cause is isolated (2026-09-11)
+
+A run with everything right — fixed harness on `main`, preflight green, the stack deployed and
+used, a snapshot in the bucket, and **98 minutes** of index warming — still printed
+`footprint before: 0` and still certified.
+
+**The isolating fact.** `footprintBefore` and the post-teardown residuals are the SAME call:
+`service.getResiduals()` and `service.teardown()` both go to `this.cloud.findResiduals(c, account)`
+(`service.ts:797` and the teardown body). One account, one query, minutes apart:
+
+| When | What stood | Sweep returned |
+| --- | --- | --- |
+| before teardown | the whole tagged stack, up 98 min | **0** |
+| after teardown | nothing | **2** ("couldn't be confirmed present") |
+
+So the sweep is NOT denied any more — `4bd2d0f` worked. The Resource Groups Tagging index in that
+account is simply lagging by **more than an hour and a half**, and only indexed the resources
+around the time they were deleted. Which means `footprint before` may never be non-zero there, and
+waiting longer is not obviously the answer.
+
+**And the guard failed open.** `certify.ts:128` asks CloudFormation what stands, precisely because
+it is a different system from the index — then:
+
+```js
+.catch(() => [] as string[]);
+if (standing.length > 0) { /* warm up, re-sweep, else UNVERIFIED */ }
+```
+
+An inventory read that cannot be completed becomes *"no stacks were standing"*, and the blind
+sweep certifies. **An unknown defaulting to the reassuring answer — inside the code written to stop
+that exact shape.** (Same family as `checksOn` and the hollow certificate it was meant to prevent.)
+Which branch was taken on this run is not provable from the output; the failing-open is provable
+from the source, and is worth fixing either way.
+
+**`certify.ts` is a `SECURITY_MECHANISM.md` §4 enforcement point — not ours to patch.** Reported to
+the agentspoppy session. The narrow change: a failed inventory read is itself grounds for
+UNVERIFIED, never for a pass.
+
+**What settles leaves-no-trace meanwhile: the console, not the index.** CloudFormation, S3,
+DynamoDB, Lambda and IAM are a different system from `tag:GetResources`, and that is exactly what
+made the 2026-09-07 manual check worth something. **When the instrument cannot see, read a
+different instrument** — do not keep re-running the blind one.
+
 ### ⚠️ The 2026-09-10 certificate is SUPERSEDED — half of it was proven, and not the half that matters
 
 ```
