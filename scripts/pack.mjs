@@ -22,7 +22,8 @@
  * code you think you shipped, and nothing downstream would notice.
  */
 import { execFileSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -74,3 +75,52 @@ execFileSync(
   ],
   { stdio: "inherit" },
 );
+
+/**
+ * The AUTHORITATIVE catalogue entry, printed after the platform packer's.
+ *
+ * The packer's own template is a generic one: it leaves `repo` and the package `url` as <FILL>,
+ * and — the part that matters — it hardcodes `"minHost": "0.3.0"` for every node-runtime poppy.
+ * That is the version the shared runtime landed in, not this poppy's requirement. Pasting it
+ * would silently undo the 0.3.20 gate, and 0.3.20 is the first host whose maintenance session can
+ * finish deleting this stack: on anything older, removing AuditPoppy from AgentsPoppy's own
+ * screen strands the stack and leaves the bucket, table, role and function billing.
+ *
+ * A plausible default that quietly overrides a decision is the most expensive kind of trap, so
+ * this prints the real thing rather than warning about the other one. `LISTING.minHost` is
+ * test-pinned; this reads it rather than repeating it.
+ */
+// Read the three values out of the listing SOURCE rather than a build output: packages/core is
+// bundled into the sidecar, so there is no dist to rely on here, and a silent fallback would put
+// us back to the generic template this block exists to replace.
+const listingSrc = readFileSync(join(repoRoot, "packages", "core", "src", "listing.ts"), "utf8");
+const field = (key) => listingSrc.match(new RegExp(`^\\s*${key}: "([^"]+)"`, "m"))?.[1];
+const manifest = JSON.parse(readFileSync(join(extensionDir, "extension.json"), "utf8"));
+const LISTING = { name: field("name"), repo: field("repo"), minHost: field("minHost") };
+const zip = join(extensionDir, "release", `${manifest.id}-${manifest.version}-any.zip`);
+if (!LISTING.name || !LISTING.repo || !LISTING.minHost) {
+  console.error("\npack: could not read name/repo/minHost from listing.ts — fix that before submitting.");
+  process.exit(1);
+}
+if (existsSync(zip)) {
+  const sha256 = createHash("sha256").update(readFileSync(zip)).digest("hex");
+  const entry = {
+    id: manifest.id,
+    name: LISTING.name,
+    version: manifest.version,
+    repo: LISTING.repo,
+    minHost: LISTING.minHost,
+    packages: {
+      any: {
+        url: `${LISTING.repo}/releases/download/v${manifest.version}/${manifest.id}-${manifest.version}-any.zip`,
+        sha256,
+      },
+    },
+  };
+  console.log("\nUse THIS entry, not the one above — the packer's template hardcodes minHost 0.3.0:");
+  console.log(JSON.stringify(entry, null, 2));
+  console.log(
+    `\nIt assumes the zip is published as a GitHub Release asset on tag v${manifest.version}.` +
+      " Publish it there first, then confirm the url resolves before submitting.",
+  );
+}
