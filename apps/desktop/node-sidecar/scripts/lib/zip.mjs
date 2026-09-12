@@ -25,7 +25,9 @@ function dosDateTime(epochSeconds) {
 
 /** entries: [{ name, data (Buffer) }]; returns the archive Buffer. */
 export function deterministicZip(entries, epochSeconds = 0) {
-  const sorted = [...entries].sort((a, b) => a.name.localeCompare(b.name));
+  // Byte-wise on the UTF-8 name, NOT localeCompare: collation depends on the ICU locale the
+  // build host happens to have, so the same entries could order differently on another machine.
+  const sorted = [...entries].sort((a, b) => Buffer.compare(Buffer.from(a.name, "utf8"), Buffer.from(b.name, "utf8")));
   const { time, date } = dosDateTime(epochSeconds);
   const locals = [];
   const centrals = [];

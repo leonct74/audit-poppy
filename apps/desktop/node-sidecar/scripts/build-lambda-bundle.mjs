@@ -6,7 +6,6 @@
  * is content-addressed: unchanged code re-deploys to the same S3 object.
  */
 import * as esbuild from "esbuild";
-import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -33,13 +32,29 @@ const result = await esbuild.build({
 });
 const js = Buffer.from(result.outputFiles[0].contents);
 
-let epoch = Number(process.env.SOURCE_DATE_EPOCH || 0);
-if (!epoch) {
-  try {
-    epoch = Number(execFileSync("git", ["log", "-1", "--format=%ct"], { cwd: repoRoot }).toString().trim()) || 0;
-  } catch {
-    epoch = 0;
-  }
+/**
+ * The embedded zip's mtime must depend on NOTHING but this setting.
+ *
+ * It used to fall back to `git log -1 --format=%ct` — HEAD's committer date. That is stable for a
+ * given commit, which is exactly what made it so hard to see: rebuilding the same commit on the
+ * same machine reproduced the bytes, so the obvious check passed while the bug was live. But the
+ * date moves on every new commit, so the SAME source shipped different package bytes depending on
+ * when it was packed relative to the release commit — a docs-only commit was enough. v0.1.0's
+ * published package and the copy committed alongside it differ for this reason and this reason
+ * only: identical entry name, identical STORED method, identical CRC-32 (1eade7af), mtimes
+ * 19:46:38 vs 19:27:44.
+ *
+ * The timestamp also carries no information worth keeping: the entry name is fixed, and the code
+ * it holds is already identified by the content-addressed key below.
+ *
+ * So: honour SOURCE_DATE_EPOCH and default to 0, which the writer clamps to its 1980-01-01 floor —
+ * the same convention the outer package zip uses (agentspoppy scripts/pack-extension.mjs), so both
+ * layers of the shipped archive stamp identically and move together if a builder ever sets it.
+ */
+const epoch = Number(process.env.SOURCE_DATE_EPOCH ?? 0);
+if (!Number.isFinite(epoch) || epoch < 0) {
+  console.error(`gen:lambda: SOURCE_DATE_EPOCH must be a non-negative number, got ${JSON.stringify(process.env.SOURCE_DATE_EPOCH)}.`);
+  process.exit(1);
 }
 
 const zip = deterministicZip([{ name: "snapshot.js", data: js }], epoch);

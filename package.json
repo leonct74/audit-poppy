@@ -19,7 +19,8 @@
     "install:local": "node scripts/install-local.mjs",
     "certify": "node scripts/certify.mjs",
     "pack": "npm run build && node scripts/pack.mjs",
-    "submission": "node scripts/submission.mjs"
+    "submission": "node scripts/submission.mjs",
+    "check:reproducible": "node scripts/check-reproducible.mjs"
   },
   "engines": {
     "node": ">=20"
