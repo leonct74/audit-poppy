@@ -103,10 +103,14 @@ function build(label, env) {
 
 /** Decode the DOS mtime of the Lambda zip embedded in the built backend bundle. */
 function embeddedStamp() {
+  // Linear scan, NOT a regex: the bundle carries the zip as one very long base64 literal, and
+  // a greedy /[A-Za-z0-9+/=]{200,}/ over a large one overflows the regex engine's stack.
   const src = readFileSync(sidecarDist, "utf8");
-  const m = src.match(/"(UEsDB[A-Za-z0-9+/=]{200,})"/);
-  if (!m) fail("could not find the embedded Lambda zip in the backend bundle.");
-  const z = Buffer.from(m[1], "base64");
+  const i = src.indexOf('"UEsDB');
+  if (i < 0) fail("could not find the embedded Lambda zip in the backend bundle.");
+  const end = src.indexOf('"', i + 1); // base64 contains no quote, so the next one closes it
+  if (end < 0) fail("the embedded Lambda zip literal is unterminated.");
+  const z = Buffer.from(src.slice(i + 1, end), "base64");
   const t = z.readUInt16LE(10);
   const d = z.readUInt16LE(12);
   const pad = (n) => String(n).padStart(2, "0");
@@ -125,6 +129,16 @@ const restore = () => {
 process.on("exit", restore);
 
 console.log("Reproducibility check — the same source must produce the same bytes.\n");
+
+// A release built from an unclean tree is unreproducible from ANY commit, whatever the stamp says.
+try {
+  const dirty = execFileSync("git", ["status", "--porcelain"], { cwd: repoRoot }).toString().trim();
+  if (dirty) {
+    console.log(`⚠️  working tree is DIRTY (${dirty.split("\n").length} file(s)).`);
+    console.log("   The check below still means something, but a RELEASE packed from this tree");
+    console.log("   would not be reproducible from any commit. Commit before packing one.\n");
+  }
+} catch { /* not a git checkout — fine */ }
 
 const baseEnv = { ...process.env };
 delete baseEnv.SOURCE_DATE_EPOCH;
